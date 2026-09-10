@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume AI — Түйіндеме платформасы</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="logo">Resume<span>AI</span></div>
+      <nav>
+        <a href="#" class="active">Түйіндеме</a>
+        <a href="#analysis">Талдау</a>
+        <a href="#api">API</a>
+      </nav>
+    </header>
+
+    <main class="main">
+      <aside class="sidebar">
+        <h2>Қадамдар</h2>
+        <ol class="steps">
+          <li class="step active" data-step="1">Жеке ақпарат</li>
+          <li class="step" data-step="2">Тәжірибе</li>
+          <li class="step" data-step="3">Дағdылар</li>
+          <li class="step" data-step="4">Алдын ала қарау</li>
+        </ol>
+        <div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div>
+      </aside>
+
+      <section class="content">
+        <h1>Түйіндеме құру</h1>
+        <p class="subtitle">Жасанды интеллект арқылы мақсатты лауазымға бейімделген CV</p>
+
+        <form id="resumeForm">
+          <div class="panel" id="panel-personal">
+            <h3>1. Жеке ақпарат</h3>
+            <div class="grid">
+              <label>Аты-жөні<input name="full_name" value="Ырысбек Айдар" required /></label>
+              <label>Email<input name="email" type="email" value="yrysbek@mail.kz" required /></label>
+              <label>Телефон<input name="phone" value="+7 777 123 4567" required /></label>
+              <label>Лауазым<input name="position" value="Frontend Developer" required /></label>
+              <label class="full">Мақсатты жұмыс<input name="target_job" value="Frontend Developer" /></label>
+              <label class="full">Білім<input name="education" value="АУЭС, Ақпараттық жүйелер, бакалавр" /></label>
+            </div>
+          </div>
+
+          <div class="panel hidden" id="panel-experience">
+            <h3>2. Жұмыс тәжірибесі</h3>
+            <label>Компания<input name="company" value="Tech Solutions KZ" /></label>
+            <label>Лауазым<input name="role" value="Junior Frontend Developer" /></label>
+            <label>Кезең<input name="period" value="2024 — қазіргі уақыт" /></label>
+            <label class="full">Сипаттама<textarea name="description">React, TypeScript және REST API қолданып веб-интерфейстерді әзірледім. UI компоненттерін қайта пайдалану арқылы әзірлеу уақытын 30% қысқарттым.</textarea></label>
+          </div>
+
+          <div class="panel hidden" id="panel-skills">
+            <h3>3. Дағdылар</h3>
+            <div class="skills-input">
+              <input name="skills" value="React, TypeScript, JavaScript, HTML, CSS, REST API" />
+            </div>
+            <div class="skill-tags">
+              <span>React</span><span>TypeScript</span><span>JavaScript</span><span>HTML</span><span>CSS</span>
+            </div>
+          </div>
+
+          <div class="panel hidden" id="panel-preview">
+            <h3>4. Алдын ала қарау және AI талдау</h3>
+            <div class="preview-grid">
+              <div class="preview-box">
+                <h4>Түйіндеме</h4>
+                <pre id="resumePreview">Толтыруды аяқтаңыз...</pre>
+              </div>
+              <div class="preview-box analysis" id="analysis">
+                <h4>AI талдау нәтижелері</h4>
+                <div class="metrics">
+                  <div class="metric"><span class="val" id="scoreComplete">—</span><span>Толықтығы</span></div>
+                  <div class="metric"><span class="val" id="scoreMatch">—</span><span>Сәйкестік</span></div>
+                  <div class="metric"><span class="val">92%</span><span>Precision</span></div>
+                  <div class="metric"><span class="val">85%</span><span>Recall</span></div>
+                </div>
+                <ul id="issuesList"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn secondary" id="prevBtn">Артқа</button>
+            <button type="button" class="btn primary" id="nextBtn">Келесі</button>
+            <button type="button" class="btn accent hidden" id="generateBtn">AI генерациялау</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

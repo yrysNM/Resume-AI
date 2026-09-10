@@ -1,0 +1,2 @@
+DOCX=C:\Users\janap\Downloads\НИРМ Ырысбек_толық.docx
+PDF=C:\Users\janap\Downloads\НИРМ Ырысбек_толық.pdf

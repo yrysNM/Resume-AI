@@ -22,10 +22,10 @@ app.add_middleware(
 
 
 class PersonalInfo(BaseModel):
-    full_name: str = Field(..., example="Ырысбек Айдар")
-    email: str = Field(..., example="yrysbek@mail.kz")
-    phone: str = Field(..., example="+7 777 123 4567")
-    position: str = Field(..., example="Frontend Developer")
+    full_name: str = Field(..., json_schema_extra={"example": "Test User"})
+    email: str = Field(..., json_schema_extra={"example": "test@mail.kz"})
+    phone: str = Field(..., json_schema_extra={"example": "+7 777 123 4567"})
+    position: str = Field(..., json_schema_extra={"example": "Test Position"})
 
 
 class ExperienceItem(BaseModel):

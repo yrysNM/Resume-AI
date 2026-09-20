@@ -10,52 +10,59 @@
   <div class="app">
     <header class="header">
       <div class="logo">Resume<span>AI</span></div>
-      <nav>
-        <a href="#" class="active">Түйіндеме</a>
-        <a href="#analysis">Талдау</a>
-        <a href="#api">API</a>
-      </nav>
+      <div class="header-right">
+        <nav>
+          <a href="#" class="active" data-i18n="nav_resume">Түйіндеме</a>
+          <a href="#analysis" data-i18n="nav_analysis">Талдау</a>
+          <a href="#api">API</a>
+        </nav>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" class="lang-btn" data-lang="kk">KK</button>
+          <button type="button" class="lang-btn" data-lang="ru">RU</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+        </div>
+      </div>
     </header>
 
     <main class="main">
       <aside class="sidebar">
-        <h2>Қадамдар</h2>
+        <h2 data-i18n="steps_title">Қадамдар</h2>
         <ol class="steps">
-          <li class="step active" data-step="1">Жеке ақпарат</li>
-          <li class="step" data-step="2">Тәжірибе</li>
-          <li class="step" data-step="3">Дағdылар</li>
-          <li class="step" data-step="4">Алдын ала қарау</li>
+          <li class="step active" data-step="1" data-i18n="step1">Жеке ақпарат</li>
+          <li class="step" data-step="2" data-i18n="step2">Тәжірибе</li>
+          <li class="step" data-step="3" data-i18n="step3">Дағдылар</li>
+          <li class="step" data-step="4" data-i18n="step4">Алдын ала қарау</li>
         </ol>
         <div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div>
       </aside>
 
       <section class="content">
-        <h1>Түйіндеме құру</h1>
-        <p class="subtitle">Жасанды интеллект арқылы мақсатты лауазымға бейімделген CV</p>
+        <h1 data-i18n="title">Түйіндеме құру</h1>
+        <p class="subtitle" data-i18n="subtitle">Жасанды интеллект арқылы мақсатты лауазымға бейімделген CV</p>
 
         <form id="resumeForm">
           <div class="panel" id="panel-personal">
-            <h3>1. Жеке ақпарат</h3>
+            <h3 data-i18n="panel1">1. Жеке ақпарат</h3>
             <div class="grid">
-              <label>Аты-жөні<input name="full_name" value="Test User" required /></label>
-              <label>Email<input name="email" type="email" value="test@mail.kz" required /></label>
-              <label>Телефон<input name="phone" value="+7 777 123 4567" required /></label>
-              <label>Лауазым<input name="position" value="Test Position" required /></label>
-              <label class="full">Мақсатты жұмыс<input name="target_job" value="Test Target Job" /></label>
-              <label class="full">Білім<input name="education" value="Test Education" /></label>
+              <label><span data-i18n="full_name">Аты-жөні</span><input name="full_name" value="Test User" required /></label>
+              <label><span data-i18n="email">Email</span><input name="email" type="email" value="test@mail.kz" required /></label>
+              <label><span data-i18n="phone">Телефон</span><input name="phone" value="+7 777 123 4567" required /></label>
+              <label><span data-i18n="position">Лауазым</span><input name="position" value="Test Position" required /></label>
+              <label class="full"><span data-i18n="target_job">Мақсатты жұмыс</span><input name="target_job" value="Test Target Job" /></label>
+              <label class="full"><span data-i18n="education">Білім</span><input name="education" value="Test Education" /></label>
             </div>
           </div>
 
           <div class="panel hidden" id="panel-experience">
-            <h3>2. Жұмыс тәжірибесі</h3>
-            <label>Компания<input name="company" value="Tech Solutions KZ" /></label>
-            <label>Лауазым<input name="role" value="Junior Frontend Developer" /></label>
-            <label>Кезең<input name="period" value="2024 — қазіргі уақыт" /></label>
-            <label class="full">Сипаттама<textarea name="description">React, TypeScript және REST API қолданып веб-интерфейстерді әзірледім. UI компоненттерін қайта пайдалану арқылы әзірлеу уақытын 30% қысқарттым.</textarea></label>
+            <h3 data-i18n="panel2">2. Жұмыс тәжірибесі</h3>
+            <label><span data-i18n="company">Компания</span><input name="company" value="Tech Solutions KZ" /></label>
+            <label><span data-i18n="role">Лауазым</span><input name="role" value="Junior Frontend Developer" /></label>
+            <label><span data-i18n="period">Кезең</span><input name="period" value="2024 — қазіргі уақыт" /></label>
+            <label class="full"><span data-i18n="description">Сипаттама</span><textarea name="description">React, TypeScript және REST API қолданып веб-интерфейстерді әзірледім. UI компоненттерін қайта пайдалану арқылы әзірлеу уақытын 30% қысқарттым.</textarea></label>
           </div>
 
           <div class="panel hidden" id="panel-skills">
-            <h3>3. Дағdылар</h3>
+            <h3 data-i18n="panel3">3. Дағдылар</h3>
             <div class="skills-input">
               <input name="skills" value="React, TypeScript, JavaScript, HTML, CSS, REST API" />
             </div>
@@ -65,17 +72,17 @@
           </div>
 
           <div class="panel hidden" id="panel-preview">
-            <h3>4. Алдын ала қарау және AI талдау</h3>
+            <h3 data-i18n="panel4">4. Алдын ала қарау және AI талдау</h3>
             <div class="preview-grid">
               <div class="preview-box">
-                <h4>Түйіндеме</h4>
+                <h4 data-i18n="resume_box">Түйіндеме</h4>
                 <pre id="resumePreview">Толтыруды аяқтаңыз...</pre>
               </div>
               <div class="preview-box analysis" id="analysis">
-                <h4>AI талдау нәтижелері</h4>
+                <h4 data-i18n="analysis_box">AI талдау нәтижелері</h4>
                 <div class="metrics">
-                  <div class="metric"><span class="val" id="scoreComplete">—</span><span>Толықтығы</span></div>
-                  <div class="metric"><span class="val" id="scoreMatch">—</span><span>Сәйкестік</span></div>
+                  <div class="metric"><span class="val" id="scoreComplete">—</span><span data-i18n="completeness">Толықтығы</span></div>
+                  <div class="metric"><span class="val" id="scoreMatch">—</span><span data-i18n="match">Сәйкестік</span></div>
                   <div class="metric"><span class="val">92%</span><span>Precision</span></div>
                   <div class="metric"><span class="val">85%</span><span>Recall</span></div>
                 </div>
@@ -85,9 +92,9 @@
           </div>
 
           <div class="actions">
-            <button type="button" class="btn secondary" id="prevBtn">Артқа</button>
-            <button type="button" class="btn primary" id="nextBtn">Келесі</button>
-            <button type="button" class="btn accent hidden" id="generateBtn">AI генерациялау</button>
+            <button type="button" class="btn secondary" id="prevBtn" data-i18n="prev">Артқа</button>
+            <button type="button" class="btn primary" id="nextBtn" data-i18n="next">Келесі</button>
+            <button type="button" class="btn accent hidden" id="generateBtn" data-i18n="generate">AI генерациялау</button>
           </div>
         </form>
       </section>

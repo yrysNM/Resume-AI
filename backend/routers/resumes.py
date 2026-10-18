@@ -15,7 +15,7 @@ from schemas import (
     ResumeRequest,
     ResumeSummary,
 )
-from services import resume_logic
+from services import bert_analyze, openai_generate, resume_logic
 
 router = APIRouter(tags=["resumes"])
 
@@ -26,16 +26,25 @@ def _analysis_from_row(row: Resume) -> AnalysisResponse | None:
     return AnalysisResponse.model_validate_json(row.analysis_json)
 
 
+def _ai_http_error(exc: Exception) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=str(exc) or "AI service unavailable",
+    )
+
+
 @router.post("/api/resume/generate", response_model=GenerateResponse)
 def generate_resume(
     payload: ResumeRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> GenerateResponse:
-    resume_text = resume_logic.build_resume_text(payload)
-    analysis = resume_logic.analyze_resume(payload)
-    title = payload.target_job or payload.personal.position or "Untitled resume"
+    try:
+        resume_text, analysis, generated_by = resume_logic.generate_and_analyze(payload)
+    except (openai_generate.OpenAIUnavailable, bert_analyze.BertUnavailable) as exc:
+        raise _ai_http_error(exc) from exc
 
+    title = payload.target_job or payload.personal.position or "Untitled resume"
     row = Resume(
         user_id=current_user.id,
         title=title,
@@ -43,7 +52,7 @@ def generate_resume(
         resume_text=resume_text,
         input_json=payload.model_dump_json(),
         analysis_json=analysis.model_dump_json(),
-        generated_by=resume_logic.GENERATED_BY_LABEL,
+        generated_by=generated_by,
     )
     db.add(row)
     db.commit()
@@ -53,7 +62,7 @@ def generate_resume(
         id=row.id,
         resume_text=resume_text,
         format="plain",
-        generated_by=resume_logic.GENERATED_BY_LABEL,
+        generated_by=generated_by,
         analysis=analysis,
     )
 
@@ -63,8 +72,12 @@ def analyze_resume_endpoint(
     payload: ResumeRequest,
     current_user: User = Depends(get_current_user),
 ) -> AnalysisResponse:
-    _ = current_user  # auth required; analysis itself is rule-based
-    return resume_logic.analyze_resume(payload)
+    _ = current_user
+    try:
+        analysis, _analyzer = resume_logic.analyze_resume(payload)
+    except bert_analyze.BertUnavailable as exc:
+        raise _ai_http_error(exc) from exc
+    return analysis
 
 
 @router.get("/api/resumes", response_model=list[ResumeSummary])

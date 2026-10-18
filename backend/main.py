@@ -40,7 +40,16 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "resume-ai-backend"}
+    from services import bert_analyze, openai_generate
+
+    return {
+        "status": "ok",
+        "service": "resume-ai-backend",
+        "openai_configured": openai_generate.openai_configured(),
+        "openai_model": settings.openai_model,
+        "bert_model": settings.bert_model_name,
+        "ai_allow_fallback": settings.ai_allow_fallback,
+    }
 
 
 app.include_router(auth_router.router)

@@ -1,1 +1,7 @@
 *.docx
+__pycache__/
+*.py[cod]
+*.db
+.env
+.venv/
+venv/

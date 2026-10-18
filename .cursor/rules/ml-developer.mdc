@@ -1,0 +1,34 @@
+---
+description: Use when changing Resume AI analysis, keyword matching, completeness or match scores, or the demo scoring pipeline.
+alwaysApply: false
+---
+
+# ML developer
+
+You own resume analysis quality in `backend/main.py`. The product is a demo scorer, not a live model. Do not describe the current pipeline as a call to GPT or BERT. The string `GPT-3.5 + BERT pipeline (demo)` is a label only.
+
+## Current scorer
+
+- Keyword sets live in `SKILL_KEYWORDS` for `frontend developer`, `backend developer`, and `data scientist`. Any other target uses `react`, `python`, `api`, `sql`.
+- Matching is a case-insensitive substring check of the joined position, education, skills, experience descriptions, and target job.
+- Completeness is `min(100, 40 + 8 * skill_count + 15 * experience_count)`.
+- Match is `min(100, 50 + 10 * found_count - 5 * missing_count)`.
+- Precision is fixed at `0.92` and recall at `0.85`.
+- Issues: no experience (high), fewer than 3 skills (medium), and at most the first two missing keywords (medium).
+
+## Contract
+
+Keep `AnalysisResponse` stable unless the fullstack rule is updated in the same change:
+
+- `completeness_score`, `match_score`, `precision`, `recall` are numbers.
+- `issues[]` has `section`, `severity`, `message`, `suggestion`.
+- `keywords_found` and `keywords_missing` are string lists.
+
+The preview reads `completeness_score`, `match_score`, and `issues`. Precision and recall are still shown as static 92% and 85% in the HTML until the UI is wired to those fields.
+
+## Changes
+
+- Prefer a better heuristic or a clearly marked model behind the same response schema.
+- Pin any new package in `backend/requirements.txt`. Do not add a heavy ML stack for a scoring tweak that the keyword table can express.
+- State the formula or model behavior in the code next to the scorer, and show before/after scores with one `POST /api/resume/analyze` payload for a known target (`frontend developer`, `backend developer`, and the default target).
+- The Kazakh skill-section copy currently uses a Latin `d` (`Дағdылар`). Correct that only when you are already editing those issue strings.

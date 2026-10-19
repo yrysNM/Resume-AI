@@ -31,7 +31,8 @@ class Settings:
 
     # Groq (primary LLM for resume generation — free tier available)
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    # Models available to free Groq accounts change over time; override via GROQ_MODEL.
+    groq_model: str = "qwen/qwen3.8-27b"
     groq_base_url: str = "https://api.groq.com/openai/v1"
 
     # BERT / sentence-transformers (analysis)

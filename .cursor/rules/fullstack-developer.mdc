@@ -14,7 +14,7 @@ You own the Resume AI product surface: the wizard UI and the HTTP API it calls. 
 - The app mounts `../frontend` at `/`. Start uvicorn with the working directory set to `backend/`, or the static files 404.
 - The browser calls `http://127.0.0.1:8000` (`API` in `frontend/app.js`). Keep that origin, or update every fetch with it.
 - Auth: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` (Bearer JWT). Resumes persist in SQLite (`resume_ai.db`); generate requires auth and saves a row.
-- AI: Groq LLM (`GROQ_API_KEY` / `GROQ_MODEL`, default `llama-3.3-70b-versatile`) for generate; sentence-transformers BERT embeddings (`BERT_MODEL_NAME`) for analyze. `generated_by` reflects the real engines used. See `.env.example`.
+- AI: Groq LLM (`GROQ_API_KEY` / `GROQ_MODEL`, default `qwen/qwen3.8-27b`) for generate; sentence-transformers BERT embeddings (`BERT_MODEL_NAME`) for analyze. `generated_by` reflects the real engines used. See `.env.example`.
 
 ## Product behavior to preserve
 

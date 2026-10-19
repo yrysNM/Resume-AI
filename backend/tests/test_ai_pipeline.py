@@ -78,12 +78,12 @@ class PipelineTests(unittest.TestCase):
             client_cls.return_value.chat.completions.create.return_value = fake_resp
             with patch("services.groq_generate.settings") as st:
                 st.groq_api_key = "gsk-test"
-                st.groq_model = "llama-3.3-70b-versatile"
+                st.groq_model = "qwen/qwen3.8-27b"
                 st.groq_base_url = "https://api.groq.com/openai/v1"
                 st.ai_allow_fallback = True
                 text, label, used = groq_generate.generate_with_fallback(_sample_payload())
         self.assertTrue(used)
-        self.assertEqual(label, "llama-3.3-70b-versatile")
+        self.assertEqual(label, "qwen/qwen3.8-27b")
         self.assertTrue(text.startswith("Groq Resume"))
 
     def test_rate_limit_fallback_label(self):
@@ -100,7 +100,7 @@ class PipelineTests(unittest.TestCase):
             client_cls.return_value.chat.completions.create.side_effect = err
             with patch("services.groq_generate.settings") as st:
                 st.groq_api_key = "gsk-test"
-                st.groq_model = "llama-3.3-70b-versatile"
+                st.groq_model = "qwen/qwen3.8-27b"
                 st.groq_base_url = "https://api.groq.com/openai/v1"
                 st.ai_allow_fallback = True
                 text, label, used = groq_generate.generate_with_fallback(_sample_payload())

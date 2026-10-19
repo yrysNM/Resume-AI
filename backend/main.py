@@ -1,8 +1,4 @@
-"""Resume AI API — FastAPI backend with JWT auth and SQLite persistence.
-
-AI generate/analyze endpoints remain rule-based (template + keyword heuristics).
-The response field `generated_by` is a demo label only — not a live GPT/BERT call.
-"""
+"""Resume AI API — FastAPI backend with JWT auth, SQLite, Groq + BERT."""
 
 from __future__ import annotations
 
@@ -25,8 +21,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    description="Түйіндеме құру және AI талдау микросервисі (JWT + SQLite)",
-    version="1.1.0",
+    description="Түйіндеме құру және AI талдау микросервисі (JWT + SQLite + Groq/BERT)",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
@@ -40,13 +36,13 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health():
-    from services import bert_analyze, openai_generate
+    from services import bert_analyze, groq_generate
 
     return {
         "status": "ok",
         "service": "resume-ai-backend",
-        "openai_configured": openai_generate.openai_configured(),
-        "openai_model": settings.openai_model,
+        "groq_configured": groq_generate.groq_configured(),
+        "groq_model": settings.groq_model,
         "bert_model": settings.bert_model_name,
         "ai_allow_fallback": settings.ai_allow_fallback,
     }

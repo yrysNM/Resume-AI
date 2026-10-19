@@ -15,7 +15,7 @@ from schemas import (
     ResumeRequest,
     ResumeSummary,
 )
-from services import bert_analyze, openai_generate, resume_logic
+from services import bert_analyze, groq_generate, resume_logic
 
 router = APIRouter(tags=["resumes"])
 
@@ -41,7 +41,7 @@ def generate_resume(
 ) -> GenerateResponse:
     try:
         resume_text, analysis, generated_by = resume_logic.generate_and_analyze(payload)
-    except (openai_generate.OpenAIUnavailable, bert_analyze.BertUnavailable) as exc:
+    except (groq_generate.GroqUnavailable, bert_analyze.BertUnavailable) as exc:
         raise _ai_http_error(exc) from exc
 
     title = payload.target_job or payload.personal.position or "Untitled resume"

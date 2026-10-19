@@ -1,4 +1,4 @@
-"""OpenAI GPT resume text generation."""
+"""Groq LLM resume text generation (OpenAI-compatible Chat Completions)."""
 
 from __future__ import annotations
 
@@ -13,30 +13,33 @@ from services import heuristic
 logger = logging.getLogger(__name__)
 
 
-class OpenAIUnavailable(Exception):
-    """Raised when GPT generation cannot run (missing key or API failure)."""
+class GroqUnavailable(Exception):
+    """Raised when Groq generation cannot run (missing key or API failure)."""
 
     def __init__(self, message: str, *, reason: str = "unavailable") -> None:
         super().__init__(message)
         self.reason = reason
 
 
-def openai_configured() -> bool:
-    return bool(settings.openai_api_key.strip())
+def groq_configured() -> bool:
+    return bool(settings.groq_api_key.strip())
 
 
 def _classify_rate_limit(exc: RateLimitError) -> tuple[str, str]:
     body = str(exc).lower()
-    if "insufficient_quota" in body or "credit_balance" in body or "no credits" in body:
-        return "OpenAI quota exhausted — add billing credits", "quota-exhausted"
-    return "OpenAI rate limit exceeded", "rate-limited"
+    if "insufficient_quota" in body or "credit" in body or "billing" in body:
+        return "Groq quota exhausted", "quota-exhausted"
+    return "Groq rate limit exceeded", "rate-limited"
 
 
 def generate_resume_text(payload: ResumeRequest) -> str:
-    if not openai_configured():
-        raise OpenAIUnavailable("OPENAI_API_KEY is not set", reason="missing-key")
+    if not groq_configured():
+        raise GroqUnavailable("GROQ_API_KEY is not set", reason="missing-key")
 
-    client = OpenAI(api_key=settings.openai_api_key)
+    client = OpenAI(
+        api_key=settings.groq_api_key,
+        base_url=settings.groq_base_url,
+    )
     target = payload.target_job or payload.personal.position
     skills = ", ".join(payload.skills) if payload.skills else "(none listed)"
     experience_lines = []
@@ -67,7 +70,7 @@ Experience:
 
     try:
         response = client.chat.completions.create(
-            model=settings.openai_model,
+            model=settings.groq_model,
             temperature=0.4,
             max_tokens=900,
             messages=[
@@ -76,31 +79,31 @@ Experience:
             ],
         )
     except AuthenticationError as exc:
-        raise OpenAIUnavailable("OpenAI authentication failed", reason="auth-failed") from exc
+        raise GroqUnavailable("Groq authentication failed", reason="auth-failed") from exc
     except RateLimitError as exc:
         message, reason = _classify_rate_limit(exc)
-        raise OpenAIUnavailable(message, reason=reason) from exc
+        raise GroqUnavailable(message, reason=reason) from exc
     except APIError as exc:
-        raise OpenAIUnavailable(f"OpenAI API error: {exc}", reason="api-error") from exc
+        raise GroqUnavailable(f"Groq API error: {exc}", reason="api-error") from exc
 
     text = (response.choices[0].message.content or "").strip()
     if not text:
-        raise OpenAIUnavailable("OpenAI returned empty resume text", reason="empty-response")
+        raise GroqUnavailable("Groq returned empty resume text", reason="empty-response")
     return text
 
 
 def generate_with_fallback(payload: ResumeRequest) -> tuple[str, str, bool]:
-    """Return (resume_text, generator_label, used_openai)."""
-    if openai_configured():
+    """Return (resume_text, generator_label, used_groq)."""
+    if groq_configured():
         try:
-            return generate_resume_text(payload), settings.openai_model, True
-        except OpenAIUnavailable as exc:
-            logger.warning("OpenAI generate failed (%s): %s", exc.reason, exc)
+            return generate_resume_text(payload), settings.groq_model, True
+        except GroqUnavailable as exc:
+            logger.warning("Groq generate failed (%s): %s", exc.reason, exc)
             if not settings.ai_allow_fallback:
                 raise
-            label = f"template(openai-{exc.reason})"
+            label = f"template(groq-{exc.reason})"
             return heuristic.build_resume_text(payload), label, False
     elif not settings.ai_allow_fallback:
-        raise OpenAIUnavailable("OPENAI_API_KEY is not set", reason="missing-key")
+        raise GroqUnavailable("GROQ_API_KEY is not set", reason="missing-key")
 
     return heuristic.build_resume_text(payload), "template", False

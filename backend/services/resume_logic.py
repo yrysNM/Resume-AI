@@ -1,18 +1,18 @@
-"""Resume generation and analysis orchestration (GPT-3.5 + BERT).
+"""Resume generation and analysis orchestration (Groq + BERT).
 
 Primary path:
-  - OpenAI chat model (default gpt-3.5-turbo) for resume text
+  - Groq chat model (default llama-3.3-70b-versatile) for resume text
   - sentence-transformers BERT-family embeddings for JD match / keywords
 
 When models are unavailable and AI_ALLOW_FALLBACK=true, falls back to the
 local template + keyword heuristics. `generated_by` always names the engines
-that actually produced the response (never a fake “demo” label).
+that actually produced the response.
 """
 
 from __future__ import annotations
 
 from schemas import AnalysisResponse, ResumeRequest
-from services import bert_analyze, openai_generate
+from services import bert_analyze, groq_generate
 
 
 def pipeline_label(generator: str, analyzer: str) -> str:
@@ -21,7 +21,7 @@ def pipeline_label(generator: str, analyzer: str) -> str:
 
 def build_resume_text(payload: ResumeRequest) -> tuple[str, str]:
     """Return (resume_text, generator_label)."""
-    text, generator, _ = openai_generate.generate_with_fallback(payload)
+    text, generator, _ = groq_generate.generate_with_fallback(payload)
     return text, generator
 
 

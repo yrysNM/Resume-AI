@@ -29,9 +29,10 @@ class Settings:
     access_token_expire_minutes: int = 60 * 24  # 24 hours
     cors_origins: tuple[str, ...] = ("*",)
 
-    # OpenAI (GPT resume generation)
-    openai_api_key: str = ""
-    openai_model: str = "gpt-3.5-turbo"
+    # Groq (primary LLM for resume generation — free tier available)
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
 
     # BERT / sentence-transformers (analysis)
     bert_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -51,8 +52,9 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(
             os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(Settings.access_token_expire_minutes))
         ),
-        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
-        openai_model=os.getenv("OPENAI_MODEL", Settings.openai_model),
+        groq_api_key=os.getenv("GROQ_API_KEY", ""),
+        groq_model=os.getenv("GROQ_MODEL", Settings.groq_model),
+        groq_base_url=os.getenv("GROQ_BASE_URL", Settings.groq_base_url),
         bert_model_name=os.getenv("BERT_MODEL_NAME", Settings.bert_model_name),
         bert_keyword_threshold=float(
             os.getenv("BERT_KEYWORD_THRESHOLD", str(Settings.bert_keyword_threshold))

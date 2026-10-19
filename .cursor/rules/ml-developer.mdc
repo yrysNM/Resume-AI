@@ -1,5 +1,5 @@
 ---
-description: Use when changing Resume AI analysis, keyword matching, completeness or match scores, or the GPT/BERT pipeline.
+description: Use when changing Resume AI analysis, keyword matching, completeness or match scores, or the Groq/BERT pipeline.
 alwaysApply: false
 ---
 
@@ -7,12 +7,12 @@ alwaysApply: false
 
 You own resume generation quality and analysis in `backend/services/`. The primary path is live:
 
-- GPT text: `services/openai_generate.py` via OpenAI Chat Completions (`OPENAI_MODEL`, default `gpt-3.5-turbo`).
+- LLM text: `services/groq_generate.py` via Groq’s OpenAI-compatible Chat Completions (`GROQ_API_KEY`, `GROQ_MODEL`, default `llama-3.3-70b-versatile`).
 - BERT-family match: `services/bert_analyze.py` via `sentence-transformers` (`BERT_MODEL_NAME`, default `all-MiniLM-L6-v2`).
 - Orchestration / honest labels: `services/resume_logic.py`.
 - Offline fallback only: `services/heuristic.py` (template + keywords), used when `AI_ALLOW_FALLBACK=true` and a model is unavailable.
 
-`generated_by` must name the engines that actually ran, e.g. `gpt-3.5-turbo + sentence-transformers/all-MiniLM-L6-v2` or `template + heuristic-keywords`. Never label a fallback as a live GPT/BERT call.
+`generated_by` must name the engines that actually ran, e.g. `llama-3.3-70b-versatile + sentence-transformers/all-MiniLM-L6-v2` or `template + heuristic-keywords`. Never label a fallback as a live Groq/BERT call.
 
 ## Analysis contract
 

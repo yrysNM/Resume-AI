@@ -1,4 +1,4 @@
-"""Unit tests for GPT/BERT orchestration (OpenAI mocked; BERT offline)."""
+"""Unit tests for Groq/BERT orchestration (Groq mocked; BERT offline)."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from unittest.mock import MagicMock, patch
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-# Ensure fallback-friendly settings before importing app modules.
 os.environ.setdefault("AI_ALLOW_FALLBACK", "true")
+os.environ["GROQ_API_KEY"] = ""
 os.environ["OPENAI_API_KEY"] = ""
 
 from schemas import ExperienceItem, PersonalInfo, ResumeRequest  # noqa: E402
-from services import bert_analyze, openai_generate, resume_logic  # noqa: E402
+from services import bert_analyze, groq_generate, resume_logic  # noqa: E402
 
 
 def _sample_payload() -> ResumeRequest:
@@ -50,8 +50,8 @@ class PipelineTests(unittest.TestCase):
         self.assertLessEqual(analysis.match_score, 100)
         self.assertTrue(analysis.keywords_found)
 
-    def test_openai_fallback_label_when_no_key(self):
-        text, label, used = openai_generate.generate_with_fallback(_sample_payload())
+    def test_groq_fallback_label_when_no_key(self):
+        text, label, used = groq_generate.generate_with_fallback(_sample_payload())
         self.assertFalse(used)
         self.assertEqual(label, "template")
         self.assertIn("Test User", text)
@@ -64,46 +64,48 @@ class PipelineTests(unittest.TestCase):
         self.assertNotIn("(demo)", generated_by)
         self.assertIsNotNone(analysis.match_score)
 
-    def test_mocked_openai_success_label(self):
+    def test_mocked_groq_success_label(self):
         fake_msg = MagicMock()
-        fake_msg.content = "GPT Resume\nSkills: React"
+        fake_msg.content = "Groq Resume\nSkills: React"
         fake_choice = MagicMock()
         fake_choice.message = fake_msg
         fake_resp = MagicMock()
         fake_resp.choices = [fake_choice]
 
-        with patch.object(openai_generate, "openai_configured", return_value=True), patch(
-            "services.openai_generate.OpenAI"
+        with patch.object(groq_generate, "groq_configured", return_value=True), patch(
+            "services.groq_generate.OpenAI"
         ) as client_cls:
             client_cls.return_value.chat.completions.create.return_value = fake_resp
-            with patch("services.openai_generate.settings") as st:
-                st.openai_api_key = "sk-test"
-                st.openai_model = "gpt-3.5-turbo"
+            with patch("services.groq_generate.settings") as st:
+                st.groq_api_key = "gsk-test"
+                st.groq_model = "llama-3.3-70b-versatile"
+                st.groq_base_url = "https://api.groq.com/openai/v1"
                 st.ai_allow_fallback = True
-                text, label, used = openai_generate.generate_with_fallback(_sample_payload())
+                text, label, used = groq_generate.generate_with_fallback(_sample_payload())
         self.assertTrue(used)
-        self.assertEqual(label, "gpt-3.5-turbo")
-        self.assertTrue(text.startswith("GPT Resume"))
+        self.assertEqual(label, "llama-3.3-70b-versatile")
+        self.assertTrue(text.startswith("Groq Resume"))
 
-    def test_quota_exhausted_fallback_label(self):
+    def test_rate_limit_fallback_label(self):
         from openai import RateLimitError
 
         err = RateLimitError(
-            message="Error code: 429 - credit_balance_exhausted insufficient_quota",
+            message="Error code: 429 - rate_limit_exceeded",
             response=MagicMock(status_code=429, headers={}),
-            body={"error": {"code": "insufficient_quota"}},
+            body={"error": {"code": "rate_limit_exceeded"}},
         )
-        with patch.object(openai_generate, "openai_configured", return_value=True), patch(
-            "services.openai_generate.OpenAI"
+        with patch.object(groq_generate, "groq_configured", return_value=True), patch(
+            "services.groq_generate.OpenAI"
         ) as client_cls:
             client_cls.return_value.chat.completions.create.side_effect = err
-            with patch("services.openai_generate.settings") as st:
-                st.openai_api_key = "sk-test"
-                st.openai_model = "gpt-3.5-turbo"
+            with patch("services.groq_generate.settings") as st:
+                st.groq_api_key = "gsk-test"
+                st.groq_model = "llama-3.3-70b-versatile"
+                st.groq_base_url = "https://api.groq.com/openai/v1"
                 st.ai_allow_fallback = True
-                text, label, used = openai_generate.generate_with_fallback(_sample_payload())
+                text, label, used = groq_generate.generate_with_fallback(_sample_payload())
         self.assertFalse(used)
-        self.assertEqual(label, "template(openai-quota-exhausted)")
+        self.assertEqual(label, "template(groq-rate-limited)")
         self.assertIn("Test User", text)
 
 

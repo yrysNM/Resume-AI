@@ -2,24 +2,39 @@
 
 from __future__ import annotations
 
+import logging
+
 from openai import APIError, AuthenticationError, OpenAI, RateLimitError
 
 from config import settings
 from schemas import ResumeRequest
 from services import heuristic
 
+logger = logging.getLogger(__name__)
+
 
 class OpenAIUnavailable(Exception):
     """Raised when GPT generation cannot run (missing key or API failure)."""
+
+    def __init__(self, message: str, *, reason: str = "unavailable") -> None:
+        super().__init__(message)
+        self.reason = reason
 
 
 def openai_configured() -> bool:
     return bool(settings.openai_api_key.strip())
 
 
+def _classify_rate_limit(exc: RateLimitError) -> tuple[str, str]:
+    body = str(exc).lower()
+    if "insufficient_quota" in body or "credit_balance" in body or "no credits" in body:
+        return "OpenAI quota exhausted — add billing credits", "quota-exhausted"
+    return "OpenAI rate limit exceeded", "rate-limited"
+
+
 def generate_resume_text(payload: ResumeRequest) -> str:
     if not openai_configured():
-        raise OpenAIUnavailable("OPENAI_API_KEY is not set")
+        raise OpenAIUnavailable("OPENAI_API_KEY is not set", reason="missing-key")
 
     client = OpenAI(api_key=settings.openai_api_key)
     target = payload.target_job or payload.personal.position
@@ -61,15 +76,16 @@ Experience:
             ],
         )
     except AuthenticationError as exc:
-        raise OpenAIUnavailable("OpenAI authentication failed") from exc
+        raise OpenAIUnavailable("OpenAI authentication failed", reason="auth-failed") from exc
     except RateLimitError as exc:
-        raise OpenAIUnavailable("OpenAI rate limit exceeded") from exc
+        message, reason = _classify_rate_limit(exc)
+        raise OpenAIUnavailable(message, reason=reason) from exc
     except APIError as exc:
-        raise OpenAIUnavailable(f"OpenAI API error: {exc}") from exc
+        raise OpenAIUnavailable(f"OpenAI API error: {exc}", reason="api-error") from exc
 
     text = (response.choices[0].message.content or "").strip()
     if not text:
-        raise OpenAIUnavailable("OpenAI returned empty resume text")
+        raise OpenAIUnavailable("OpenAI returned empty resume text", reason="empty-response")
     return text
 
 
@@ -78,10 +94,13 @@ def generate_with_fallback(payload: ResumeRequest) -> tuple[str, str, bool]:
     if openai_configured():
         try:
             return generate_resume_text(payload), settings.openai_model, True
-        except OpenAIUnavailable:
+        except OpenAIUnavailable as exc:
+            logger.warning("OpenAI generate failed (%s): %s", exc.reason, exc)
             if not settings.ai_allow_fallback:
                 raise
+            label = f"template(openai-{exc.reason})"
+            return heuristic.build_resume_text(payload), label, False
     elif not settings.ai_allow_fallback:
-        raise OpenAIUnavailable("OPENAI_API_KEY is not set")
+        raise OpenAIUnavailable("OPENAI_API_KEY is not set", reason="missing-key")
 
     return heuristic.build_resume_text(payload), "template", False

@@ -85,6 +85,27 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(label, "gpt-3.5-turbo")
         self.assertTrue(text.startswith("GPT Resume"))
 
+    def test_quota_exhausted_fallback_label(self):
+        from openai import RateLimitError
+
+        err = RateLimitError(
+            message="Error code: 429 - credit_balance_exhausted insufficient_quota",
+            response=MagicMock(status_code=429, headers={}),
+            body={"error": {"code": "insufficient_quota"}},
+        )
+        with patch.object(openai_generate, "openai_configured", return_value=True), patch(
+            "services.openai_generate.OpenAI"
+        ) as client_cls:
+            client_cls.return_value.chat.completions.create.side_effect = err
+            with patch("services.openai_generate.settings") as st:
+                st.openai_api_key = "sk-test"
+                st.openai_model = "gpt-3.5-turbo"
+                st.ai_allow_fallback = True
+                text, label, used = openai_generate.generate_with_fallback(_sample_payload())
+        self.assertFalse(used)
+        self.assertEqual(label, "template(openai-quota-exhausted)")
+        self.assertIn("Test User", text)
+
 
 if __name__ == "__main__":
     unittest.main()

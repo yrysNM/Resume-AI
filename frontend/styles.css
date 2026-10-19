@@ -65,6 +65,18 @@ textarea { min-height: 100px; resize: vertical; font-family: inherit; }
   white-space: pre-wrap; font-size: 0.85rem; line-height: 1.6; color: #cbd5e1;
   font-family: "Consolas", monospace;
 }
+.export-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.export-actions .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.experience-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+.experience-entry {
+  background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 16px;
+}
+.experience-entry-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px;
+}
+.experience-entry-title { font-size: 0.9rem; font-weight: 600; color: #e2e8f0; }
+.experience-entry .remove-experience:disabled { opacity: 0.4; cursor: not-allowed; }
 .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
 .metric {
   background: #1e293b; border-radius: 10px; padding: 14px; text-align: center;

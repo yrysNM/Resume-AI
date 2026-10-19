@@ -69,10 +69,8 @@
 
           <div class="panel hidden" id="panel-experience">
             <h3 data-i18n="panel2">2. Жұмыс тәжірибесі</h3>
-            <label><span data-i18n="company">Компания</span><input name="company" value="Tech Solutions KZ" /></label>
-            <label><span data-i18n="role">Лауазым</span><input name="role" value="Junior Frontend Developer" /></label>
-            <label><span data-i18n="period">Кезең</span><input name="period" value="2024 — қазіргі уақыт" /></label>
-            <label class="full"><span data-i18n="description">Сипаттама</span><textarea name="description">React, TypeScript және REST API қолданып веб-интерфейстерді әзірледім. UI компоненттерін қайта пайдалану арқылы әзірлеу уақытын 30% қысқарттым.</textarea></label>
+            <div id="experienceList" class="experience-list"></div>
+            <button type="button" class="btn secondary btn-sm" id="addExperienceBtn" data-i18n="add_experience">+ Тәжірибе қосу</button>
           </div>
 
           <div class="panel hidden" id="panel-skills">
@@ -91,6 +89,10 @@
               <div class="preview-box">
                 <h4 data-i18n="resume_box">Түйіндеме</h4>
                 <pre id="resumePreview">Толтыруды аяқтаңыз...</pre>
+                <div class="export-actions" id="exportActions">
+                  <button type="button" class="btn secondary btn-sm" id="exportPdfBtn" disabled data-i18n="export_pdf">PDF жүктеу</button>
+                  <button type="button" class="btn secondary btn-sm" id="exportDocxBtn" disabled data-i18n="export_docx">DOCX жүктеу</button>
+                </div>
               </div>
               <div class="preview-box analysis" id="analysis">
                 <h4 data-i18n="analysis_box">AI талдау нәтижелері</h4>

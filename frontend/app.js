@@ -33,6 +33,9 @@ const I18N = {
     role: "Лауазым",
     period: "Кезең",
     description: "Сипаттама",
+    add_experience: "+ Тәжірибе қосу",
+    remove_experience: "Жою",
+    experience_n: "Тәжірибе",
     panel3: "3. Дағдылар",
     panel4: "4. Алдын ала қарау және AI талдау",
     resume_box: "Түйіндеме",
@@ -44,6 +47,9 @@ const I18N = {
     prev: "Артқа",
     next: "Келесі",
     generate: "AI генерациялау",
+    export_pdf: "PDF жүктеу",
+    export_docx: "DOCX жүктеу",
+    export_failed: "Экспорт сәтсіз",
     login: "Кіру",
     register: "Тіркелу",
     logout: "Шығу",
@@ -83,6 +89,9 @@ const I18N = {
     role: "Должность",
     period: "Период",
     description: "Описание",
+    add_experience: "+ Добавить опыт",
+    remove_experience: "Удалить",
+    experience_n: "Опыт",
     panel3: "3. Навыки",
     panel4: "4. Предпросмотр и ИИ-анализ",
     resume_box: "Резюме",
@@ -94,6 +103,9 @@ const I18N = {
     prev: "Назад",
     next: "Далее",
     generate: "Сгенерировать с ИИ",
+    export_pdf: "Скачать PDF",
+    export_docx: "Скачать DOCX",
+    export_failed: "Ошибка экспорта",
     login: "Войти",
     register: "Регистрация",
     logout: "Выйти",
@@ -133,6 +145,9 @@ const I18N = {
     role: "Role",
     period: "Period",
     description: "Description",
+    add_experience: "+ Add experience",
+    remove_experience: "Remove",
+    experience_n: "Experience",
     panel3: "3. Skills",
     panel4: "4. Preview and AI analysis",
     resume_box: "Resume",
@@ -144,6 +159,9 @@ const I18N = {
     prev: "Back",
     next: "Next",
     generate: "Generate with AI",
+    export_pdf: "Download PDF",
+    export_docx: "Download DOCX",
+    export_failed: "Export failed",
     login: "Log in",
     register: "Sign up",
     logout: "Log out",
@@ -217,6 +235,7 @@ function applyLang() {
     b.setAttribute("aria-pressed", String(active));
   });
   syncAuthModalLabels();
+  refreshExperienceLabels();
   renderResults();
 }
 
@@ -419,6 +438,81 @@ async function openSavedResume(id) {
   }
 }
 
+/* ---------- Experience entries ---------- */
+const experienceList = document.getElementById("experienceList");
+const addExperienceBtn = document.getElementById("addExperienceBtn");
+
+const DEFAULT_EXPERIENCE = [
+  {
+    company: "Tech Solutions KZ",
+    role: "Junior Frontend Developer",
+    period: "2024 — қазіргі уақыт",
+    description:
+      "React, TypeScript және REST API қолданып веб-интерфейстерді әзірледім. UI компоненттерін қайта пайдалану арқылы әзірлеу уақытын 30% қысқарттым.",
+  },
+];
+
+function createExperienceEntry(values = {}) {
+  const entry = document.createElement("div");
+  entry.className = "experience-entry";
+  entry.innerHTML = `
+    <div class="experience-entry-header">
+      <span class="experience-entry-title"></span>
+      <button type="button" class="btn secondary btn-sm remove-experience" data-i18n="remove_experience"></button>
+    </div>
+    <div class="grid">
+      <label><span data-i18n="company"></span><input class="exp-company" /></label>
+      <label><span data-i18n="role"></span><input class="exp-role" /></label>
+      <label class="full"><span data-i18n="period"></span><input class="exp-period" /></label>
+      <label class="full"><span data-i18n="description"></span><textarea class="exp-description"></textarea></label>
+    </div>
+  `;
+  entry.querySelector(".exp-company").value = values.company || "";
+  entry.querySelector(".exp-role").value = values.role || "";
+  entry.querySelector(".exp-period").value = values.period || "";
+  entry.querySelector(".exp-description").value = values.description || "";
+  entry.querySelector(".remove-experience").addEventListener("click", () => {
+    if (experienceList.children.length <= 1) {
+      entry.querySelector(".exp-company").value = "";
+      entry.querySelector(".exp-role").value = "";
+      entry.querySelector(".exp-period").value = "";
+      entry.querySelector(".exp-description").value = "";
+      return;
+    }
+    entry.remove();
+    refreshExperienceLabels();
+  });
+  experienceList.appendChild(entry);
+  refreshExperienceLabels();
+  return entry;
+}
+
+function refreshExperienceLabels() {
+  experienceList.querySelectorAll(".experience-entry").forEach((entry, i) => {
+    const title = entry.querySelector(".experience-entry-title");
+    if (title) title.textContent = `${t("experience_n")} ${i + 1}`;
+    entry.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+  });
+  const canRemove = experienceList.children.length > 1;
+  experienceList.querySelectorAll(".remove-experience").forEach((btn) => {
+    btn.disabled = !canRemove;
+  });
+}
+
+function collectExperience() {
+  return Array.from(experienceList.querySelectorAll(".experience-entry")).map((entry) => ({
+    company: entry.querySelector(".exp-company").value.trim(),
+    role: entry.querySelector(".exp-role").value.trim(),
+    period: entry.querySelector(".exp-period").value.trim(),
+    description: entry.querySelector(".exp-description").value.trim(),
+  })).filter((item) => item.company || item.role || item.period || item.description);
+}
+
+addExperienceBtn.addEventListener("click", () => createExperienceEntry());
+DEFAULT_EXPERIENCE.forEach((item) => createExperienceEntry(item));
+
 /* ---------- Wizard ---------- */
 const panels = ["panel-personal", "panel-experience", "panel-skills", "panel-preview"];
 const steps = document.querySelectorAll(".step");
@@ -426,6 +520,8 @@ const progressFill = document.querySelector(".progress-fill");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const generateBtn = document.getElementById("generateBtn");
+const exportPdfBtn = document.getElementById("exportPdfBtn");
+const exportDocxBtn = document.getElementById("exportDocxBtn");
 
 function showStep(n) {
   currentStep = n;
@@ -450,17 +546,59 @@ function getPayload() {
       position: f.position.value,
     },
     skills,
-    experience: [
-      {
-        company: f.company.value,
-        role: f.role.value,
-        period: f.period.value,
-        description: f.description.value,
-      },
-    ],
+    experience: collectExperience(),
     education: f.education.value,
     target_job: f.target_job.value,
   };
+}
+
+function syncExportButtons() {
+  const ready = Boolean(lastResult?.gen?.id);
+  exportPdfBtn.disabled = !ready;
+  exportDocxBtn.disabled = !ready;
+}
+
+async function exportResume(fmt) {
+  const id = lastResult?.gen?.id;
+  if (!id) return;
+  if (!currentUser) {
+    openAuthModal("login");
+    return;
+  }
+  try {
+    const token = getToken();
+    const res = await fetch(`${API}/api/resumes/${id}/export?format=${fmt}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      let message = res.statusText;
+      try {
+        const data = JSON.parse(text);
+        message = typeof data.detail === "string" ? data.detail : message;
+      } catch (e) { /* ignore */ }
+      throw Object.assign(new Error(message), { status: res.status });
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = /filename="?([^"]+)"?/i.exec(disposition);
+    const filename = match ? match[1] : `resume.${fmt}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    if (e.status === 401) {
+      logout();
+      openAuthModal("login");
+      return;
+    }
+    alert(e.message || t("export_failed"));
+  }
 }
 
 function renderResults() {
@@ -469,6 +607,7 @@ function renderResults() {
 
   if (!lastResult) {
     preview.textContent = t("placeholder");
+    syncExportButtons();
     return;
   }
 
@@ -501,6 +640,7 @@ function renderResults() {
       list.appendChild(li);
     });
   }
+  syncExportButtons();
 }
 
 async function generate() {
@@ -534,6 +674,8 @@ async function generate() {
 prevBtn.addEventListener("click", () => showStep(Math.max(1, currentStep - 1)));
 nextBtn.addEventListener("click", () => showStep(Math.min(4, currentStep + 1)));
 generateBtn.addEventListener("click", generate);
+exportPdfBtn.addEventListener("click", () => exportResume("pdf"));
+exportDocxBtn.addEventListener("click", () => exportResume("docx"));
 steps.forEach((s) => s.addEventListener("click", () => showStep(Number(s.dataset.step))));
 document.querySelectorAll(".lang-btn").forEach((b) =>
   b.addEventListener("click", () => setLang(b.dataset.lang))

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
@@ -15,6 +18,7 @@ from schemas import (
     ResumeRequest,
     ResumeSummary,
 )
+from services import export as export_service
 from services import resume_logic
 
 router = APIRouter(tags=["resumes"])
@@ -120,3 +124,31 @@ def delete_resume(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
     db.delete(row)
     db.commit()
+
+
+@router.get("/api/resumes/{resume_id}/export")
+def export_resume(
+    resume_id: int,
+    fmt: Literal["pdf", "docx"] = Query(..., alias="format"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    row = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+    try:
+        body, media_type, _ = export_service.export_bytes(row.resume_text, fmt)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    title = row.title or "resume"
+    safe = "".join(c if c.isalnum() or c in " -_" else "_" for c in title).strip() or "resume"
+    filename = f"{safe[:80]}.{fmt}"
+    return Response(
+        content=body,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

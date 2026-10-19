@@ -5,7 +5,7 @@ alwaysApply: false
 
 # ML developer
 
-You own resume analysis quality in `backend/main.py`. The product is a demo scorer, not a live model. Do not describe the current pipeline as a call to GPT or BERT. The string `GPT-3.5 + BERT pipeline (demo)` is a label only.
+You own resume analysis quality in `backend/services/resume_logic.py`. The product is a demo scorer, not a live model. Do not describe the current pipeline as a call to GPT or BERT. The string `GPT-3.5 + BERT pipeline (demo)` is a label only.
 
 ## Current scorer
 

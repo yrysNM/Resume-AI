@@ -1,5 +1,11 @@
-const API = "http://127.0.0.1:8000";
+// Same-origin when UI is served by FastAPI; override for a split frontend host.
+const API = window.location.origin.includes("8000")
+  ? ""
+  : "http://127.0.0.1:8000";
+const TOKEN_KEY = "resume_ai_token";
 let currentStep = 1;
+let authMode = "login"; // login | register
+let currentUser = null;
 
 /* ---------- i18n ---------- */
 const I18N = {
@@ -7,6 +13,7 @@ const I18N = {
     doc_title: "Resume AI — Түйіндеме платформасы",
     nav_resume: "Түйіндеме",
     nav_analysis: "Талдау",
+    nav_saved: "Сақталған",
     steps_title: "Қадамдар",
     step1: "Жеке ақпарат",
     step2: "Тәжірибе",
@@ -37,11 +44,26 @@ const I18N = {
     prev: "Артқа",
     next: "Келесі",
     generate: "AI генерациялау",
+    login: "Кіру",
+    register: "Тіркелу",
+    logout: "Шығу",
+    password: "Құпия сөз",
+    cancel: "Болдырмау",
+    auth_required: "Генерация үшін кіріңіз немесе тіркеліңіз.",
+    saved_title: "Сақталған",
+    saved_empty: "Кіріңіз — түйіндемелер осында",
+    saved_none: "Әлі сақталған түйіндеме жоқ",
+    load_failed: "Жүктеу сәтсіз",
+    auth_failed: "Кіру сәтсіз",
+    generate_failed: "Генерация сәтсіз",
+    delete: "Жою",
+    delete_failed: "Жою сәтсіз",
   },
   ru: {
     doc_title: "Resume AI — Платформа для резюме",
     nav_resume: "Резюме",
     nav_analysis: "Анализ",
+    nav_saved: "Сохранённые",
     steps_title: "Шаги",
     step1: "Личные данные",
     step2: "Опыт",
@@ -72,11 +94,26 @@ const I18N = {
     prev: "Назад",
     next: "Далее",
     generate: "Сгенерировать с ИИ",
+    login: "Войти",
+    register: "Регистрация",
+    logout: "Выйти",
+    password: "Пароль",
+    cancel: "Отмена",
+    auth_required: "Чтобы генерировать, войдите или зарегистрируйтесь.",
+    saved_title: "Сохранённые",
+    saved_empty: "Войдите — резюме появятся здесь",
+    saved_none: "Пока нет сохранённых резюме",
+    load_failed: "Не удалось загрузить",
+    auth_failed: "Ошибка входа",
+    generate_failed: "Ошибка генерации",
+    delete: "Удалить",
+    delete_failed: "Не удалось удалить",
   },
   en: {
     doc_title: "Resume AI — Resume Platform",
     nav_resume: "Resume",
     nav_analysis: "Analysis",
+    nav_saved: "Saved",
     steps_title: "Steps",
     step1: "Personal info",
     step2: "Experience",
@@ -107,6 +144,20 @@ const I18N = {
     prev: "Back",
     next: "Next",
     generate: "Generate with AI",
+    login: "Log in",
+    register: "Sign up",
+    logout: "Log out",
+    password: "Password",
+    cancel: "Cancel",
+    auth_required: "Log in or sign up to generate and save resumes.",
+    saved_title: "Saved",
+    saved_empty: "Log in — resumes appear here",
+    saved_none: "No saved resumes yet",
+    load_failed: "Failed to load",
+    auth_failed: "Authentication failed",
+    generate_failed: "Generation failed",
+    delete: "Delete",
+    delete_failed: "Delete failed",
   },
 };
 
@@ -121,6 +172,39 @@ const t = (key) => I18N[lang][key] ?? I18N.kk[key] ?? key;
 
 let lastResult = null; // { gen, analysis } after the first successful generation
 
+function getToken() {
+  try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+}
+
+function setToken(token) {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch (e) { /* ignore */ }
+}
+
+async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API}${path}`, { ...options, headers });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = { detail: text }; }
+  if (!res.ok) {
+    const detail = data?.detail;
+    const message = typeof detail === "string"
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((d) => d.msg || JSON.stringify(d)).join("; ")
+        : res.statusText;
+    const err = new Error(message || `HTTP ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
 function applyLang() {
   document.documentElement.lang = lang;
   document.title = t("doc_title");
@@ -132,6 +216,7 @@ function applyLang() {
     b.classList.toggle("active", active);
     b.setAttribute("aria-pressed", String(active));
   });
+  syncAuthModalLabels();
   renderResults();
 }
 
@@ -140,6 +225,198 @@ function setLang(next) {
   lang = next;
   try { localStorage.setItem("lang", lang); } catch (e) { /* ignore */ }
   applyLang();
+}
+
+/* ---------- Auth UI ---------- */
+const authModal = document.getElementById("authModal");
+const authForm = document.getElementById("authForm");
+const authError = document.getElementById("authError");
+const authUserEl = document.getElementById("authUser");
+const loginOpenBtn = document.getElementById("loginOpenBtn");
+const registerOpenBtn = document.getElementById("registerOpenBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const authHint = document.getElementById("authHint");
+
+function syncAuthModalLabels() {
+  const title = document.getElementById("authModalTitle");
+  const submit = document.getElementById("authSubmitBtn");
+  const label = authMode === "register" ? t("register") : t("login");
+  title.textContent = label;
+  submit.textContent = label;
+}
+
+function openAuthModal(mode) {
+  authMode = mode;
+  authError.classList.add("hidden");
+  authError.textContent = "";
+  const nameField = authForm.querySelector(".auth-name-field");
+  if (nameField) {
+    nameField.classList.toggle("hidden", mode !== "register");
+  }
+  authForm.password.autocomplete = mode === "register" ? "new-password" : "current-password";
+  syncAuthModalLabels();
+  authModal.classList.remove("hidden");
+  authForm.email.focus();
+}
+
+function closeAuthModal() {
+  authModal.classList.add("hidden");
+}
+
+function renderAuthState() {
+  const loggedIn = Boolean(currentUser);
+  authUserEl.classList.toggle("hidden", !loggedIn);
+  logoutBtn.classList.toggle("hidden", !loggedIn);
+  loginOpenBtn.classList.toggle("hidden", loggedIn);
+  registerOpenBtn.classList.toggle("hidden", loggedIn);
+  authHint.classList.toggle("hidden", loggedIn);
+  if (loggedIn) {
+    authUserEl.textContent = currentUser.full_name || currentUser.email;
+  }
+}
+
+async function refreshSession() {
+  const token = getToken();
+  if (!token) {
+    currentUser = null;
+    renderAuthState();
+    renderSavedList([]);
+    return;
+  }
+  try {
+    currentUser = await api("/api/auth/me");
+    renderAuthState();
+    await loadSavedResumes();
+  } catch (e) {
+    setToken(null);
+    currentUser = null;
+    renderAuthState();
+    renderSavedList([]);
+  }
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  authError.classList.add("hidden");
+  const email = authForm.email.value.trim();
+  const password = authForm.password.value;
+  const full_name = authForm.full_name.value.trim();
+  const path = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+  const body = authMode === "register"
+    ? { email, password, full_name }
+    : { email, password };
+  try {
+    const data = await api(path, { method: "POST", body: JSON.stringify(body) });
+    setToken(data.access_token);
+    closeAuthModal();
+    authForm.reset();
+    await refreshSession();
+  } catch (e) {
+    authError.textContent = e.message || t("auth_failed");
+    authError.classList.remove("hidden");
+  }
+}
+
+function logout() {
+  setToken(null);
+  currentUser = null;
+  lastResult = null;
+  renderAuthState();
+  renderSavedList([]);
+  renderResults();
+}
+
+/* ---------- Saved resumes ---------- */
+const savedList = document.getElementById("savedList");
+
+function renderSavedList(items) {
+  savedList.innerHTML = "";
+  if (!currentUser) {
+    const li = document.createElement("li");
+    li.className = "saved-empty";
+    li.textContent = t("saved_empty");
+    savedList.appendChild(li);
+    return;
+  }
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.className = "saved-empty";
+    li.textContent = t("saved_none");
+    savedList.appendChild(li);
+    return;
+  }
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "saved-row";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "saved-item";
+    btn.textContent = item.title || item.target_job || `#${item.id}`;
+    btn.addEventListener("click", () => openSavedResume(item.id));
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "saved-delete";
+    del.setAttribute("aria-label", t("delete"));
+    del.title = t("delete");
+    del.textContent = "×";
+    del.addEventListener("click", (event) => {
+      event.stopPropagation();
+      deleteSavedResume(item.id);
+    });
+    li.appendChild(btn);
+    li.appendChild(del);
+    savedList.appendChild(li);
+  });
+}
+
+async function deleteSavedResume(id) {
+  try {
+    await api(`/api/resumes/${id}`, { method: "DELETE" });
+    if (lastResult?.gen?.id === id) {
+      lastResult = null;
+      renderResults();
+    }
+    await loadSavedResumes();
+  } catch (e) {
+    alert(e.message || t("delete_failed"));
+  }
+}
+
+async function loadSavedResumes() {
+  if (!currentUser) {
+    renderSavedList([]);
+    return;
+  }
+  try {
+    const items = await api("/api/resumes");
+    renderSavedList(items);
+  } catch (e) {
+    renderSavedList([]);
+  }
+}
+
+async function openSavedResume(id) {
+  try {
+    const detail = await api(`/api/resumes/${id}`);
+    lastResult = {
+      gen: {
+        id: detail.id,
+        resume_text: detail.resume_text,
+        generated_by: detail.generated_by,
+      },
+      analysis: detail.analysis || {
+        completeness_score: "—",
+        match_score: "—",
+        precision: 0.92,
+        recall: 0.85,
+        issues: [],
+      },
+    };
+    showStep(4);
+    renderResults();
+  } catch (e) {
+    alert(e.message || t("load_failed"));
+  }
 }
 
 /* ---------- Wizard ---------- */
@@ -197,17 +474,28 @@ function renderResults() {
 
   const { gen, analysis } = lastResult;
   preview.textContent = gen.resume_text;
-  document.getElementById("scoreComplete").textContent = `${analysis.completeness_score}%`;
-  document.getElementById("scoreMatch").textContent = `${analysis.match_score}%`;
+  document.getElementById("scoreComplete").textContent =
+    analysis.completeness_score === "—" ? "—" : `${analysis.completeness_score}%`;
+  document.getElementById("scoreMatch").textContent =
+    analysis.match_score === "—" ? "—" : `${analysis.match_score}%`;
+  if (analysis.precision != null) {
+    document.getElementById("scorePrecision").textContent =
+      `${Math.round(analysis.precision * 100)}%`;
+  }
+  if (analysis.recall != null) {
+    document.getElementById("scoreRecall").textContent =
+      `${Math.round(analysis.recall * 100)}%`;
+  }
 
   list.innerHTML = "";
-  if (analysis.issues.length === 0) {
+  const issues = analysis.issues || [];
+  if (issues.length === 0) {
     const li = document.createElement("li");
     li.style.borderColor = "#22c55e";
     li.textContent = t("no_issues");
     list.appendChild(li);
   } else {
-    analysis.issues.forEach((issue) => {
+    issues.forEach((issue) => {
       const li = document.createElement("li");
       li.innerHTML = `<strong>${issue.section}:</strong> ${issue.message}<br><em>${issue.suggestion}</em>`;
       list.appendChild(li);
@@ -216,22 +504,31 @@ function renderResults() {
 }
 
 async function generate() {
+  if (!currentUser) {
+    openAuthModal("login");
+    return;
+  }
   const payload = getPayload();
-  const [gen, analysis] = await Promise.all([
-    fetch(`${API}/api/resume/generate`, {
+  try {
+    const gen = await api("/api/resume/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }).then((r) => r.json()),
-    fetch(`${API}/api/resume/analyze`, {
+    });
+    const analysis = gen.analysis || await api("/api/resume/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }).then((r) => r.json()),
-  ]);
-
-  lastResult = { gen, analysis };
-  renderResults();
+    });
+    lastResult = { gen, analysis };
+    renderResults();
+    await loadSavedResumes();
+  } catch (e) {
+    if (e.status === 401) {
+      logout();
+      openAuthModal("login");
+      return;
+    }
+    alert(e.message || t("generate_failed"));
+  }
 }
 
 prevBtn.addEventListener("click", () => showStep(Math.max(1, currentStep - 1)));
@@ -242,5 +539,13 @@ document.querySelectorAll(".lang-btn").forEach((b) =>
   b.addEventListener("click", () => setLang(b.dataset.lang))
 );
 
+loginOpenBtn.addEventListener("click", () => openAuthModal("login"));
+registerOpenBtn.addEventListener("click", () => openAuthModal("register"));
+logoutBtn.addEventListener("click", logout);
+document.getElementById("authCancelBtn").addEventListener("click", closeAuthModal);
+document.getElementById("authModalBackdrop").addEventListener("click", closeAuthModal);
+authForm.addEventListener("submit", handleAuthSubmit);
+
 showStep(1);
 applyLang();
+refreshSession();

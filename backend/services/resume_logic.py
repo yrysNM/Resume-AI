@@ -1,111 +1,38 @@
-"""Rule-based resume generation and analysis (demo AI pipeline).
+"""Resume generation and analysis orchestration (Groq + BERT).
 
-No GPT-3.5 or BERT calls are made. The `generated_by` label is metadata only.
+Primary path:
+  - Groq chat model (default llama-3.3-70b-versatile) for resume text
+  - sentence-transformers BERT-family embeddings for JD match / keywords
+
+When models are unavailable and AI_ALLOW_FALLBACK=true, falls back to the
+local template + keyword heuristics. `generated_by` always names the engines
+that actually produced the response.
 """
 
 from __future__ import annotations
 
-from schemas import AnalysisIssue, AnalysisResponse, ResumeRequest
-
-GENERATED_BY_LABEL = "GPT-3.5 + BERT pipeline (demo)"
-
-SKILL_KEYWORDS = {
-    "frontend developer": ["react", "javascript", "typescript", "html", "css", "api"],
-    "backend developer": ["python", "fastapi", "sql", "rest", "docker"],
-    "data scientist": ["python", "ml", "pandas", "nlp", "scikit-learn"],
-}
+from schemas import AnalysisResponse, ResumeRequest
+from services import bert_analyze, groq_generate
 
 
-def detect_keywords(text: str, target: str) -> tuple[list[str], list[str]]:
-    target_lower = target.lower()
-    expected = SKILL_KEYWORDS.get(target_lower, ["react", "python", "api", "sql"])
-    text_lower = text.lower()
-    found = [kw for kw in expected if kw in text_lower]
-    missing = [kw for kw in expected if kw not in text_lower]
-    return found, missing
+def pipeline_label(generator: str, analyzer: str) -> str:
+    return f"{generator} + {analyzer}"
 
 
-def build_resume_text(payload: ResumeRequest) -> str:
-    """Template-based resume text — not a live language-model call."""
-    p = payload.personal
-    skills_line = ", ".join(payload.skills) if payload.skills else "—"
-    exp_blocks = []
-    for item in payload.experience:
-        exp_blocks.append(
-            f"• {item.role} — {item.company} ({item.period})\n  {item.description}"
-        )
-    experience_text = "\n".join(exp_blocks) if exp_blocks else "—"
-
-    resume_text = f"""{p.full_name}
-{p.position} | {p.email} | {p.phone}
-
-ҚЫЗМЕТ ТӘЖІРИБЕСІ
-{experience_text}
-
-ДАҒДЫЛАР
-{skills_line}
-
-БІЛІМ
-{payload.education or '—'}
-
-Мақсатты лауазым: {payload.target_job or p.position}
-"""
-    return resume_text.strip()
+def build_resume_text(payload: ResumeRequest) -> tuple[str, str]:
+    """Return (resume_text, generator_label)."""
+    text, generator, _ = groq_generate.generate_with_fallback(payload)
+    return text, generator
 
 
-def analyze_resume(payload: ResumeRequest) -> AnalysisResponse:
-    """Heuristic keyword/scoring analysis — not a live BERT call."""
-    full_text = " ".join(
-        [
-            payload.personal.position,
-            payload.education,
-            " ".join(payload.skills),
-            " ".join(e.description for e in payload.experience),
-            payload.target_job,
-        ]
-    )
-    found, missing = detect_keywords(full_text, payload.target_job or payload.personal.position)
+def analyze_resume(payload: ResumeRequest) -> tuple[AnalysisResponse, str]:
+    """Return (analysis, analyzer_label)."""
+    analysis, analyzer, _ = bert_analyze.analyze_with_fallback(payload)
+    return analysis, analyzer
 
-    issues: list[AnalysisIssue] = []
-    if len(payload.experience) < 1:
-        issues.append(
-            AnalysisIssue(
-                section="Тәжірибе",
-                severity="high",
-                message="Жұмыс тәжірибесі бөлімі толтырылмаған",
-                suggestion="Кем дегенде бір жұмыс орны мен міндеттерін қосыңыз",
-            )
-        )
-    if len(payload.skills) < 3:
-        issues.append(
-            AnalysisIssue(
-                section="Дағдылар",
-                severity="medium",
-                message="Дағдылар тізімі тым қысқа",
-                suggestion="Мақсатты лауазымға сәйкес кем дегенде 5 дағды қосыңыз",
-            )
-        )
-    for kw in missing[:2]:
-        issues.append(
-            AnalysisIssue(
-                section="Кілт сөздер",
-                severity="medium",
-                message=f"Жұмыс сипаттамасында '{kw}' кілт сөзі жоқ",
-                suggestion=f"'{kw}' дағдысын тәжірибе сипаттамасына енгізіңіз",
-            )
-        )
 
-    # completeness = min(100, 40 + 8*skills + 15*experience)
-    completeness = min(100.0, 40 + len(payload.skills) * 8 + len(payload.experience) * 15)
-    # match = min(100, 50 + 10*found - 5*missing)
-    match_score = min(100.0, 50 + len(found) * 10 - len(missing) * 5)
-
-    return AnalysisResponse(
-        completeness_score=round(completeness, 1),
-        match_score=round(match_score, 1),
-        precision=0.92,
-        recall=0.85,
-        issues=issues,
-        keywords_found=found,
-        keywords_missing=missing,
-    )
+def generate_and_analyze(payload: ResumeRequest) -> tuple[str, AnalysisResponse, str]:
+    """Return (resume_text, analysis, generated_by)."""
+    resume_text, generator = build_resume_text(payload)
+    analysis, analyzer = analyze_resume(payload)
+    return resume_text, analysis, pipeline_label(generator, analyzer)

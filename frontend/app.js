@@ -58,6 +58,7 @@ const I18N = {
     generate_failed: "Генерация сәтсіз",
     delete: "Жою",
     delete_failed: "Жою сәтсіз",
+    generated_by: "Құбыр",
   },
   ru: {
     doc_title: "Resume AI — Платформа для резюме",
@@ -108,6 +109,7 @@ const I18N = {
     generate_failed: "Ошибка генерации",
     delete: "Удалить",
     delete_failed: "Не удалось удалить",
+    generated_by: "Конвейер",
   },
   en: {
     doc_title: "Resume AI — Resume Platform",
@@ -158,6 +160,7 @@ const I18N = {
     generate_failed: "Generation failed",
     delete: "Delete",
     delete_failed: "Delete failed",
+    generated_by: "Pipeline",
   },
 };
 
@@ -402,7 +405,7 @@ async function openSavedResume(id) {
       gen: {
         id: detail.id,
         resume_text: detail.resume_text,
-        generated_by: detail.generated_by,
+        generated_by: detail.generated_by || "",
       },
       analysis: detail.analysis || {
         completeness_score: "—",
@@ -466,14 +469,23 @@ function getPayload() {
 function renderResults() {
   const preview = document.getElementById("resumePreview");
   const list = document.getElementById("issuesList");
+  const generatedBy = document.getElementById("generatedBy");
 
   if (!lastResult) {
     preview.textContent = t("placeholder");
+    generatedBy.classList.add("hidden");
+    generatedBy.textContent = "";
     return;
   }
 
   const { gen, analysis } = lastResult;
   preview.textContent = gen.resume_text;
+  if (gen.generated_by) {
+    generatedBy.textContent = `${t("generated_by")}: ${gen.generated_by}`;
+    generatedBy.classList.remove("hidden");
+  } else {
+    generatedBy.classList.add("hidden");
+  }
   document.getElementById("scoreComplete").textContent =
     analysis.completeness_score === "—" ? "—" : `${analysis.completeness_score}%`;
   document.getElementById("scoreMatch").textContent =

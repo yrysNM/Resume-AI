@@ -1,22 +1,20 @@
 ---
-description: Use when changing Resume AI analysis, keyword matching, completeness or match scores, or the demo scoring pipeline.
+description: Use when changing Resume AI analysis, keyword matching, completeness or match scores, or the Groq/BERT pipeline.
 alwaysApply: false
 ---
 
 # ML developer
 
-You own resume analysis quality in `backend/services/resume_logic.py`. The product is a demo scorer, not a live model. Do not describe the current pipeline as a call to GPT or BERT. The string `GPT-3.5 + BERT pipeline (demo)` is a label only.
+You own resume generation quality and analysis in `backend/services/`. The primary path is live:
 
-## Current scorer
+- LLM text: `services/groq_generate.py` via Groq’s OpenAI-compatible Chat Completions (`GROQ_API_KEY`, `GROQ_MODEL`, default `qwen/qwen3.8-27b`).
+- BERT-family match: `services/bert_analyze.py` via `sentence-transformers` (`BERT_MODEL_NAME`, default `all-MiniLM-L6-v2`).
+- Orchestration / honest labels: `services/resume_logic.py`.
+- Offline fallback only: `services/heuristic.py` (template + keywords), used when `AI_ALLOW_FALLBACK=true` and a model is unavailable.
 
-- Keyword sets live in `SKILL_KEYWORDS` for `frontend developer`, `backend developer`, and `data scientist`. Any other target uses `react`, `python`, `api`, `sql`.
-- Matching is a case-insensitive substring check of the joined position, education, skills, experience descriptions, and target job.
-- Completeness is `min(100, 40 + 8 * skill_count + 15 * experience_count)`.
-- Match is `min(100, 50 + 10 * found_count - 5 * missing_count)`.
-- Precision is fixed at `0.92` and recall at `0.85`.
-- Issues: no experience (high), fewer than 3 skills (medium), and at most the first two missing keywords (medium).
+`generated_by` must name the engines that actually ran, e.g. `qwen/qwen3.8-27b + sentence-transformers/all-MiniLM-L6-v2` or `template + heuristic-keywords`. Never label a fallback as a live Groq/BERT call.
 
-## Contract
+## Analysis contract
 
 Keep `AnalysisResponse` stable unless the fullstack rule is updated in the same change:
 
@@ -24,11 +22,10 @@ Keep `AnalysisResponse` stable unless the fullstack rule is updated in the same 
 - `issues[]` has `section`, `severity`, `message`, `suggestion`.
 - `keywords_found` and `keywords_missing` are string lists.
 
-The preview reads `completeness_score`, `match_score`, and `issues`. Precision and recall are still shown as static 92% and 85% in the HTML until the UI is wired to those fields.
+BERT path: cosine similarity between resume corpus and target-job text drives `match_score`; keywords use lexical hit or embedding proximity (`BERT_KEYWORD_THRESHOLD`). Completeness stays `min(100, 40 + 8 * skills + 15 * experience)`.
 
 ## Changes
 
-- Prefer a better heuristic or a clearly marked model behind the same response schema.
-- Pin any new package in `backend/requirements.txt`. Do not add a heavy ML stack for a scoring tweak that the keyword table can express.
-- State the formula or model behavior in the code next to the scorer, and show before/after scores with one `POST /api/resume/analyze` payload for a known target (`frontend developer`, `backend developer`, and the default target).
-- The Kazakh skill-section copy currently uses a Latin `d` (`Дағdылар`). Correct that only when you are already editing those issue strings.
+- Prefer improving prompts, embedding model choice, or thresholds behind the same schema.
+- Pin new packages in `backend/requirements.txt`. Document env vars in `.env.example`.
+- Never commit API keys. Show before/after scores with one authenticated `POST /api/resume/analyze` for a known target (`frontend developer`, `backend developer`).

@@ -40,7 +40,7 @@ class Resume(Base):
     input_json: Mapped[str] = mapped_column(Text, nullable=False)  # original form payload
     analysis_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     generated_by: Mapped[str] = mapped_column(
-        String(128), nullable=False, default="GPT-3.5 + BERT pipeline (demo)"
+        String(255), nullable=False, default="pending"
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(

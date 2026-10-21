@@ -64,6 +64,21 @@ const I18N = {
     generate_failed: "Генерация сәтсіз",
     delete: "Жою",
     delete_failed: "Жою сәтсіз",
+    login: "Кіру",
+    register: "Тіркелу",
+    logout: "Шығу",
+    password: "Құпия сөз",
+    cancel: "Болдырмау",
+    auth_required: "Генерация үшін кіріңіз немесе тіркеліңіз.",
+    saved_title: "Сақталған",
+    saved_empty: "Кіріңіз — түйіндемелер осында",
+    saved_none: "Әлі сақталған түйіндеме жоқ",
+    load_failed: "Жүктеу сәтсіз",
+    auth_failed: "Кіру сәтсіз",
+    generate_failed: "Генерация сәтсіз",
+    delete: "Жою",
+    delete_failed: "Жою сәтсіз",
+    generated_by: "Құбыр",
   },
   ru: {
     doc_title: "Resume AI — Платформа для резюме",
@@ -120,6 +135,21 @@ const I18N = {
     generate_failed: "Ошибка генерации",
     delete: "Удалить",
     delete_failed: "Не удалось удалить",
+    login: "Войти",
+    register: "Регистрация",
+    logout: "Выйти",
+    password: "Пароль",
+    cancel: "Отмена",
+    auth_required: "Чтобы генерировать, войдите или зарегистрируйтесь.",
+    saved_title: "Сохранённые",
+    saved_empty: "Войдите — резюме появятся здесь",
+    saved_none: "Пока нет сохранённых резюме",
+    load_failed: "Не удалось загрузить",
+    auth_failed: "Ошибка входа",
+    generate_failed: "Ошибка генерации",
+    delete: "Удалить",
+    delete_failed: "Не удалось удалить",
+    generated_by: "Конвейер",
   },
   en: {
     doc_title: "Resume AI — Resume Platform",
@@ -176,6 +206,21 @@ const I18N = {
     generate_failed: "Generation failed",
     delete: "Delete",
     delete_failed: "Delete failed",
+    login: "Log in",
+    register: "Sign up",
+    logout: "Log out",
+    password: "Password",
+    cancel: "Cancel",
+    auth_required: "Log in or sign up to generate and save resumes.",
+    saved_title: "Saved",
+    saved_empty: "Log in — resumes appear here",
+    saved_none: "No saved resumes yet",
+    load_failed: "Failed to load",
+    auth_failed: "Authentication failed",
+    generate_failed: "Generation failed",
+    delete: "Delete",
+    delete_failed: "Delete failed",
+    generated_by: "Pipeline",
   },
 };
 
@@ -513,6 +558,198 @@ function collectExperience() {
 addExperienceBtn.addEventListener("click", () => createExperienceEntry());
 DEFAULT_EXPERIENCE.forEach((item) => createExperienceEntry(item));
 
+/* ---------- Auth UI ---------- */
+const authModal = document.getElementById("authModal");
+const authForm = document.getElementById("authForm");
+const authError = document.getElementById("authError");
+const authUserEl = document.getElementById("authUser");
+const loginOpenBtn = document.getElementById("loginOpenBtn");
+const registerOpenBtn = document.getElementById("registerOpenBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const authHint = document.getElementById("authHint");
+
+function syncAuthModalLabels() {
+  const title = document.getElementById("authModalTitle");
+  const submit = document.getElementById("authSubmitBtn");
+  const label = authMode === "register" ? t("register") : t("login");
+  title.textContent = label;
+  submit.textContent = label;
+}
+
+function openAuthModal(mode) {
+  authMode = mode;
+  authError.classList.add("hidden");
+  authError.textContent = "";
+  const nameField = authForm.querySelector(".auth-name-field");
+  if (nameField) {
+    nameField.classList.toggle("hidden", mode !== "register");
+  }
+  authForm.password.autocomplete = mode === "register" ? "new-password" : "current-password";
+  syncAuthModalLabels();
+  authModal.classList.remove("hidden");
+  authForm.email.focus();
+}
+
+function closeAuthModal() {
+  authModal.classList.add("hidden");
+}
+
+function renderAuthState() {
+  const loggedIn = Boolean(currentUser);
+  authUserEl.classList.toggle("hidden", !loggedIn);
+  logoutBtn.classList.toggle("hidden", !loggedIn);
+  loginOpenBtn.classList.toggle("hidden", loggedIn);
+  registerOpenBtn.classList.toggle("hidden", loggedIn);
+  authHint.classList.toggle("hidden", loggedIn);
+  if (loggedIn) {
+    authUserEl.textContent = currentUser.full_name || currentUser.email;
+  }
+}
+
+async function refreshSession() {
+  const token = getToken();
+  if (!token) {
+    currentUser = null;
+    renderAuthState();
+    renderSavedList([]);
+    return;
+  }
+  try {
+    currentUser = await api("/api/auth/me");
+    renderAuthState();
+    await loadSavedResumes();
+  } catch (e) {
+    setToken(null);
+    currentUser = null;
+    renderAuthState();
+    renderSavedList([]);
+  }
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  authError.classList.add("hidden");
+  const email = authForm.email.value.trim();
+  const password = authForm.password.value;
+  const full_name = authForm.full_name.value.trim();
+  const path = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+  const body = authMode === "register"
+    ? { email, password, full_name }
+    : { email, password };
+  try {
+    const data = await api(path, { method: "POST", body: JSON.stringify(body) });
+    setToken(data.access_token);
+    closeAuthModal();
+    authForm.reset();
+    await refreshSession();
+  } catch (e) {
+    authError.textContent = e.message || t("auth_failed");
+    authError.classList.remove("hidden");
+  }
+}
+
+function logout() {
+  setToken(null);
+  currentUser = null;
+  lastResult = null;
+  renderAuthState();
+  renderSavedList([]);
+  renderResults();
+}
+
+/* ---------- Saved resumes ---------- */
+const savedList = document.getElementById("savedList");
+
+function renderSavedList(items) {
+  savedList.innerHTML = "";
+  if (!currentUser) {
+    const li = document.createElement("li");
+    li.className = "saved-empty";
+    li.textContent = t("saved_empty");
+    savedList.appendChild(li);
+    return;
+  }
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.className = "saved-empty";
+    li.textContent = t("saved_none");
+    savedList.appendChild(li);
+    return;
+  }
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "saved-row";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "saved-item";
+    btn.textContent = item.title || item.target_job || `#${item.id}`;
+    btn.addEventListener("click", () => openSavedResume(item.id));
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "saved-delete";
+    del.setAttribute("aria-label", t("delete"));
+    del.title = t("delete");
+    del.textContent = "×";
+    del.addEventListener("click", (event) => {
+      event.stopPropagation();
+      deleteSavedResume(item.id);
+    });
+    li.appendChild(btn);
+    li.appendChild(del);
+    savedList.appendChild(li);
+  });
+}
+
+async function deleteSavedResume(id) {
+  try {
+    await api(`/api/resumes/${id}`, { method: "DELETE" });
+    if (lastResult?.gen?.id === id) {
+      lastResult = null;
+      renderResults();
+    }
+    await loadSavedResumes();
+  } catch (e) {
+    alert(e.message || t("delete_failed"));
+  }
+}
+
+async function loadSavedResumes() {
+  if (!currentUser) {
+    renderSavedList([]);
+    return;
+  }
+  try {
+    const items = await api("/api/resumes");
+    renderSavedList(items);
+  } catch (e) {
+    renderSavedList([]);
+  }
+}
+
+async function openSavedResume(id) {
+  try {
+    const detail = await api(`/api/resumes/${id}`);
+    lastResult = {
+      gen: {
+        id: detail.id,
+        resume_text: detail.resume_text,
+        generated_by: detail.generated_by || "",
+      },
+      analysis: detail.analysis || {
+        completeness_score: "—",
+        match_score: "—",
+        precision: 0.92,
+        recall: 0.85,
+        issues: [],
+      },
+    };
+    showStep(4);
+    renderResults();
+  } catch (e) {
+    alert(e.message || t("load_failed"));
+  }
+}
+
 /* ---------- Wizard ---------- */
 const panels = ["panel-personal", "panel-experience", "panel-skills", "panel-preview"];
 const steps = document.querySelectorAll(".step");
@@ -604,19 +841,38 @@ async function exportResume(fmt) {
 function renderResults() {
   const preview = document.getElementById("resumePreview");
   const list = document.getElementById("issuesList");
+  const generatedBy = document.getElementById("generatedBy");
 
   if (!lastResult) {
     preview.textContent = t("placeholder");
     syncExportButtons();
+    generatedBy.classList.add("hidden");
+    generatedBy.textContent = "";
     return;
   }
 
   const { gen, analysis } = lastResult;
   preview.textContent = gen.resume_text;
+  if (gen.generated_by) {
+    generatedBy.textContent = `${t("generated_by")}: ${gen.generated_by}`;
+    generatedBy.classList.remove("hidden");
+  } else {
+    generatedBy.classList.add("hidden");
+  }
   document.getElementById("scoreComplete").textContent =
+    analysis.completeness_score === "—" ? "—" :
     analysis.completeness_score === "—" ? "—" : `${analysis.completeness_score}%`;
   document.getElementById("scoreMatch").textContent =
+    analysis.match_score === "—" ? "—" :
     analysis.match_score === "—" ? "—" : `${analysis.match_score}%`;
+  if (analysis.precision != null) {
+    document.getElementById("scorePrecision").textContent =
+      `${Math.round(analysis.precision * 100)}%`;
+  }
+  if (analysis.recall != null) {
+    document.getElementById("scoreRecall").textContent =
+      `${Math.round(analysis.recall * 100)}%`;
+  }
   if (analysis.precision != null) {
     document.getElementById("scorePrecision").textContent =
       `${Math.round(analysis.precision * 100)}%`;

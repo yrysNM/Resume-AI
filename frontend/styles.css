@@ -77,6 +77,9 @@ textarea { min-height: 100px; resize: vertical; font-family: inherit; }
 }
 .experience-entry-title { font-size: 0.9rem; font-weight: 600; color: #e2e8f0; }
 .experience-entry .remove-experience:disabled { opacity: 0.4; cursor: not-allowed; }
+.generated-by {
+  margin-top: 12px; font-size: 0.75rem; color: #64748b; word-break: break-word;
+}
 .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
 .metric {
   background: #1e293b; border-radius: 10px; padding: 14px; text-align: center;

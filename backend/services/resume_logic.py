@@ -1,7 +1,7 @@
-"""Resume generation and analysis orchestration (Groq + BERT).
+"""Resume generation and analysis orchestration (Ollama + BERT).
 
 Primary path:
-  - Groq chat model (default qwen/qwen3.8-27b) for resume text
+  - Ollama chat model (default llama3.2) for resume text
   - sentence-transformers BERT-family embeddings for JD match / keywords
 
 When models are unavailable and AI_ALLOW_FALLBACK=true, falls back to the
@@ -12,7 +12,7 @@ that actually produced the response.
 from __future__ import annotations
 
 from schemas import AnalysisResponse, ResumeRequest
-from services import bert_analyze, groq_generate
+from services import bert_analyze, ollama_generate
 
 
 def pipeline_label(generator: str, analyzer: str) -> str:
@@ -21,7 +21,7 @@ def pipeline_label(generator: str, analyzer: str) -> str:
 
 def build_resume_text(payload: ResumeRequest) -> tuple[str, str]:
     """Return (resume_text, generator_label)."""
-    text, generator, _ = groq_generate.generate_with_fallback(payload)
+    text, generator, _ = ollama_generate.generate_with_fallback(payload)
     return text, generator
 
 

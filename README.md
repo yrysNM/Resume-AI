@@ -1,8 +1,8 @@
 # Resume AI
 
-A KK / RU / EN resume wizard: sign in with JWT, generate a CV with Groq, score it with BERT, save a private library, and export PDF or DOCX.
+A KK / RU / EN resume wizard: sign in with JWT, generate a CV with Ollama, score it with BERT, save a private library, and export PDF or DOCX.
 
-**Stack:** FastAPI (app version 1.2.0) in [`backend/`](backend/) on `:8000`; Nuxt 4 SPA (`ssr: false`) in [`frontend/`](frontend/) on `:3000`. The browser talks to FastAPI over CORS with a Bearer token in `localStorage` (`resume_ai_token`). Nuxt does **not** proxy the API through Nitro.
+**Stack:** FastAPI (app version 1.3.0) in [`backend/`](backend/) on `:8000`; Nuxt 4 SPA (`ssr: false`) in [`frontend/`](frontend/) on `:3000`. The browser talks to FastAPI over CORS with a Bearer token in `localStorage` (`resume_ai_token`). Nuxt does **not** proxy the API through Nitro.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — full-stack layout, API, and AI pipeline
 - [BUILD.md](BUILD.md) — how to run, lint, typecheck, and test
@@ -10,7 +10,7 @@ A KK / RU / EN resume wizard: sign in with JWT, generate a CV with Groq, score i
 
 ## Quick start
 
-Copy [`.env.example`](.env.example) to `.env` at the repo root. A human must set `SECRET_KEY` and `GROQ_API_KEY`. Copy [`frontend/.env.example`](frontend/.env.example) to `frontend/.env` only if you need a non-default `NUXT_PUBLIC_API_BASE`. Never open or print `.env`.
+Copy [`.env.example`](.env.example) to `.env` at the repo root. A human must set `SECRET_KEY`. Resume text comes from a local Ollama server (`OLLAMA_BASE_URL`, default model `llama3.2`). Copy [`frontend/.env.example`](frontend/.env.example) to `frontend/.env` only if you need a non-default `NUXT_PUBLIC_API_BASE`. Never open or print `.env`.
 
 Two terminals:
 

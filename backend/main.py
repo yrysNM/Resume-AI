@@ -1,4 +1,4 @@
-"""Resume AI API — FastAPI backend with JWT auth, SQLite, Groq + BERT."""
+"""Resume AI API — FastAPI backend with JWT auth, SQLite, Ollama + BERT."""
 
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    description="Түйіндеме құру және AI талдау микросервисі (JWT + SQLite + Groq/BERT)",
-    version="1.2.0",
+    description="Түйіндеме құру және AI талдау микросервисі (JWT + SQLite + Ollama/BERT)",
+    version="1.3.0",
     lifespan=lifespan,
 )
 
@@ -38,13 +38,14 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health():
-    from services import groq_generate
+    from services import ollama_generate
 
     return {
         "status": "ok",
         "service": "resume-ai-backend",
-        "groq_configured": groq_generate.groq_configured(),
-        "groq_model": settings.groq_model,
+        "ollama_configured": ollama_generate.ollama_configured(),
+        "ollama_model": settings.ollama_model,
+        "ollama_base_url": settings.ollama_base_url,
         "bert_model": settings.bert_model_name,
         "ai_allow_fallback": settings.ai_allow_fallback,
     }

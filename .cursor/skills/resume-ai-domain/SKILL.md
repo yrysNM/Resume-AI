@@ -30,10 +30,10 @@ Do not add fields on one side only. Auth contract: `UserRegister` (password 8–
 
 A **label** of engines that actually ran (`{generator} + {analyzer}`), not a provider name to hide.
 
-- Generator: Groq model id, `template(groq-…)`, or `template`
+- Generator: Ollama model id, `template(ollama-…)`, or `template`
 - Analyzer: BERT model id, or `heuristic-keywords`
 
-Never rewrite fallback as if Groq/BERT succeeded. UI copy uses the `generated_by` i18n key (“Pipeline”).
+Never rewrite fallback as if Ollama/BERT succeeded. UI copy uses the `generated_by` i18n key (“Pipeline”).
 
 ## Export
 

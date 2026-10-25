@@ -23,7 +23,7 @@ Do **not** “fix” unasked: SQLite + `create_all` (no Alembic), SPA `ssr: fals
 | [`models.py`](backend/models.py) | `User`, `Resume` |
 | [`schemas.py`](backend/schemas.py) | Pydantic request/response models |
 | [`routers/`](backend/routers/) | Thin HTTP: `auth_router`, `resumes` |
-| [`services/`](backend/services/) | Groq → BERT → heuristic fallback, export |
+| [`services/`](backend/services/) | Ollama → BERT → heuristic fallback, export |
 
 Run uvicorn with cwd `backend/` so `DATABASE_URL=sqlite:///./resume_ai.db` creates `backend/resume_ai.db`.
 
@@ -57,7 +57,7 @@ Locales: KK / RU / EN in `frontend/i18n/locales/`. Default locale `kk`, strategy
 
 | Method | Path | Auth | Notes |
 |--------|------|------|-------|
-| GET | `/api/health` | no | Groq/BERT flags |
+| GET | `/api/health` | no | Ollama/BERT flags |
 | POST | `/api/auth/register` | no | 201 `TokenResponse` |
 | POST | `/api/auth/login` | no | `TokenResponse` |
 | GET | `/api/auth/me` | Bearer | `UserOut` |
@@ -74,13 +74,13 @@ Base URL for the SPA: `runtimeConfig.public.apiBase` ← `NUXT_PUBLIC_API_BASE` 
 
 Orchestrated in [`services/resume_logic.py`](backend/services/resume_logic.py):
 
-1. **Generate** — Groq Chat Completions (OpenAI-compatible client, `GROQ_MODEL`).
+1. **Generate** — Ollama Chat Completions (OpenAI-compatible client, `OLLAMA_MODEL`).
 2. **Analyze** — sentence-transformers BERT (`BERT_MODEL_NAME`) for JD similarity and keywords.
 3. **Fallback** — local template + keyword heuristics when models fail **and** `AI_ALLOW_FALLBACK` is true. Otherwise generate/analyze return HTTP 503.
 
 `generated_by` is an honest label of what actually ran, e.g. `{generator} + {analyzer}`:
 
-- Generator: the Groq model name, `template(groq-…)`, or `template`
+- Generator: the Ollama model name, `template(ollama-…)`, or `template`
 - Analyzer: the BERT model name, or `heuristic-keywords`
 
 Do not hide fallback behind a fake provider name.

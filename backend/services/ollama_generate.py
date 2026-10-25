@@ -1,10 +1,10 @@
-"""Groq LLM resume text generation (OpenAI-compatible Chat Completions)."""
+"""Ollama LLM resume text generation (OpenAI-compatible Chat Completions)."""
 
 from __future__ import annotations
 
 import logging
 
-from openai import APIError, AuthenticationError, OpenAI, RateLimitError
+from openai import APIConnectionError, APIError, AuthenticationError, OpenAI, RateLimitError
 
 from config import settings
 from schemas import ResumeRequest
@@ -13,32 +13,26 @@ from services import heuristic
 logger = logging.getLogger(__name__)
 
 
-class GroqUnavailable(Exception):
-    """Raised when Groq generation cannot run (missing key or API failure)."""
+class OllamaUnavailable(Exception):
+    """Raised when Ollama generation cannot run (server down or API failure)."""
 
     def __init__(self, message: str, *, reason: str = "unavailable") -> None:
         super().__init__(message)
         self.reason = reason
 
 
-def groq_configured() -> bool:
-    return bool(settings.groq_api_key.strip())
-
-
-def _classify_rate_limit(exc: RateLimitError) -> tuple[str, str]:
-    body = str(exc).lower()
-    if "insufficient_quota" in body or "credit" in body or "billing" in body:
-        return "Groq quota exhausted", "quota-exhausted"
-    return "Groq rate limit exceeded", "rate-limited"
+def ollama_configured() -> bool:
+    # Local Ollama needs no real API key; base URL defaults are enough.
+    return bool(settings.ollama_base_url.strip())
 
 
 def generate_resume_text(payload: ResumeRequest) -> str:
-    if not groq_configured():
-        raise GroqUnavailable("GROQ_API_KEY is not set", reason="missing-key")
+    if not ollama_configured():
+        raise OllamaUnavailable("OLLAMA_BASE_URL is not set", reason="missing-base-url")
 
     client = OpenAI(
-        api_key=settings.groq_api_key,
-        base_url=settings.groq_base_url,
+        api_key=settings.ollama_api_key or "ollama",
+        base_url=settings.ollama_base_url,
     )
     target = payload.target_job or payload.personal.position
     skills = ", ".join(payload.skills) if payload.skills else "(none listed)"
@@ -70,7 +64,7 @@ Experience:
 
     try:
         response = client.chat.completions.create(
-            model=settings.groq_model,
+            model=settings.ollama_model,
             temperature=0.4,
             max_tokens=900,
             messages=[
@@ -78,32 +72,36 @@ Experience:
                 {"role": "user", "content": user},
             ],
         )
+    except APIConnectionError as exc:
+        raise OllamaUnavailable(
+            "Cannot reach Ollama — is the server running?",
+            reason="connection-failed",
+        ) from exc
     except AuthenticationError as exc:
-        raise GroqUnavailable("Groq authentication failed", reason="auth-failed") from exc
+        raise OllamaUnavailable("Ollama authentication failed", reason="auth-failed") from exc
     except RateLimitError as exc:
-        message, reason = _classify_rate_limit(exc)
-        raise GroqUnavailable(message, reason=reason) from exc
+        raise OllamaUnavailable("Ollama rate limit exceeded", reason="rate-limited") from exc
     except APIError as exc:
-        raise GroqUnavailable(f"Groq API error: {exc}", reason="api-error") from exc
+        raise OllamaUnavailable(f"Ollama API error: {exc}", reason="api-error") from exc
 
     text = (response.choices[0].message.content or "").strip()
     if not text:
-        raise GroqUnavailable("Groq returned empty resume text", reason="empty-response")
+        raise OllamaUnavailable("Ollama returned empty resume text", reason="empty-response")
     return text
 
 
 def generate_with_fallback(payload: ResumeRequest) -> tuple[str, str, bool]:
-    """Return (resume_text, generator_label, used_groq)."""
-    if groq_configured():
+    """Return (resume_text, generator_label, used_ollama)."""
+    if ollama_configured():
         try:
-            return generate_resume_text(payload), settings.groq_model, True
-        except GroqUnavailable as exc:
-            logger.warning("Groq generate failed (%s): %s", exc.reason, exc)
+            return generate_resume_text(payload), settings.ollama_model, True
+        except OllamaUnavailable as exc:
+            logger.warning("Ollama generate failed (%s): %s", exc.reason, exc)
             if not settings.ai_allow_fallback:
                 raise
-            label = f"template(groq-{exc.reason})"
+            label = f"template(ollama-{exc.reason})"
             return heuristic.build_resume_text(payload), label, False
     elif not settings.ai_allow_fallback:
-        raise GroqUnavailable("GROQ_API_KEY is not set", reason="missing-key")
+        raise OllamaUnavailable("OLLAMA_BASE_URL is not set", reason="missing-base-url")
 
     return heuristic.build_resume_text(payload), "template", False

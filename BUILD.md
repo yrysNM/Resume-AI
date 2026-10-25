@@ -4,7 +4,7 @@ Prerequisites: Python 3.12+ (local venv may be 3.14), Node.js, and **pnpm**. Two
 
 Copy [`.env.example`](.env.example) → `.env` and [`frontend/.env.example`](frontend/.env.example) → `frontend/.env` if needed. A human sets secret values. Never `cat` `.env`.
 
-Env **names** only: `SECRET_KEY`, `DATABASE_URL`, `GROQ_API_KEY`, `GROQ_MODEL`, `BERT_MODEL_NAME`, `AI_ALLOW_FALLBACK`, `CORS_ORIGINS`, `NUXT_PUBLIC_API_BASE`. More names are listed in `.env.example`.
+Env **names** only: `SECRET_KEY`, `DATABASE_URL`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `BERT_MODEL_NAME`, `AI_ALLOW_FALLBACK`, `CORS_ORIGINS`, `NUXT_PUBLIC_API_BASE`. More names are listed in `.env.example`.
 
 ## Backend
 

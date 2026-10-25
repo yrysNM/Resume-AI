@@ -4,7 +4,7 @@ Operating manual for Cursor and other coding agents. Read this first, then the m
 
 ## Repo map
 
-- [`backend/`](backend/) — FastAPI 1.2.0 on `:8000` (JWT, SQLite, Groq + BERT, export)
+- [`backend/`](backend/) — FastAPI 1.3.0 on `:8000` (JWT, SQLite, Ollama + BERT, export)
 - [`frontend/`](frontend/) — Nuxt 4 SPA (`ssr: false`) on `:3000` (features `auth`, `resume`, `library`)
 - Canonical docs: [ARCHITECTURE.md](ARCHITECTURE.md), [BUILD.md](BUILD.md), [README.md](README.md)
 - Frontend-only pages: [frontend/README.md](frontend/README.md), [frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md)
@@ -40,7 +40,7 @@ Do **not** open, read, search, or print `.env`, `.env.*`, `*.db`, dumps, tokens,
 - `nuxt.config.ts` module changes
 - Auth transport changes (cookies, HttpOnly, Nitro proxy)
 - Alembic / Postgres
-- Anything that needs secret values (`SECRET_KEY`, `GROQ_API_KEY`, …)
+- Anything that needs secret values (`SECRET_KEY`, …)
 
 ## Do not invent
 

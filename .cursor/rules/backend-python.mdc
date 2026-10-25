@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Backend Python
 
-- Keep routers thin. Groq, BERT, heuristic, and export live in `services/`.
+- Keep routers thin. Ollama, BERT, heuristic, and export live in `services/`.
 - Request/response models belong in `schemas.py`. Mirror any change in `frontend/app/shared/schemas/`.
 - Protect private routes with `Depends(get_current_user)`. Filter resumes by `current_user.id`; 404 for other users.
 - Raise `HTTPException`. Never print tokens, passwords, or API keys.

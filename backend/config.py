@@ -20,6 +20,21 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _env_cors_origins(default: tuple[str, ...]) -> tuple[str, ...]:
+    raw = os.getenv("CORS_ORIGINS")
+    if raw is None or not raw.strip():
+        return default
+    origins = tuple(part.strip() for part in raw.split(",") if part.strip())
+    return origins or default
+
+
+# Nuxt dev server origins (Bearer JWT via Authorization; credentials not required).
+_DEFAULT_CORS_ORIGINS: tuple[str, ...] = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+)
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "Resume AI API"
@@ -27,7 +42,7 @@ class Settings:
     secret_key: str = "change-me-in-production-resume-ai-demo-secret"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24  # 24 hours
-    cors_origins: tuple[str, ...] = ("*",)
+    cors_origins: tuple[str, ...] = _DEFAULT_CORS_ORIGINS
 
     # Ollama (local LLM for resume generation — no cloud API key required)
     ollama_base_url: str = "http://127.0.0.1:11434/v1"
@@ -53,6 +68,7 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(
             os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(Settings.access_token_expire_minutes))
         ),
+        cors_origins=_env_cors_origins(Settings.cors_origins),
         ollama_base_url=os.getenv("OLLAMA_BASE_URL", Settings.ollama_base_url),
         ollama_model=os.getenv("OLLAMA_MODEL", Settings.ollama_model),
         ollama_api_key=os.getenv("OLLAMA_API_KEY", Settings.ollama_api_key),

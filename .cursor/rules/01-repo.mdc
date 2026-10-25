@@ -1,0 +1,25 @@
+---
+description: Repo layout and docs; work in backend/ or frontend/ only
+alwaysApply: true
+---
+
+# Repo layout
+
+Canonical docs at the repo root: `README.md`, `ARCHITECTURE.md`, `BUILD.md`, `AGENTS.md`.
+`frontend/README.md` and `frontend/ARCHITECTURE.md` are frontend-only; use the root docs for the full stack.
+
+## Where to work
+
+- Backend: `backend/` — FastAPI (app version 1.2.0) on `:8000`
+- Frontend: `frontend/` — Nuxt 4 SPA (`ssr: false`) on `:3000`
+- Do **not** resurrect a vanilla `index.html` / `app.js` at the repo root
+- Do **not** mount FastAPI `StaticFiles` to serve the Nuxt app
+
+## Do not “fix” unasked
+
+- SQLite + `create_all` (no Alembic)
+- Bearer JWT in `localStorage` key `resume_ai_token` (no HttpOnly cookies)
+- No pagination on `/api/resumes`
+- No Docker or CI in this repo
+
+Follow Rule #1. Use `.env.example` for names only. Never open `.env` or `*.db`.

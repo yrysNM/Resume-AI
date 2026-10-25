@@ -1,0 +1,22 @@
+---
+description: Feature-sliced Nuxt SPA conventions for pages, HTTP, and Pinia
+globs: frontend/**/*.{vue,ts}
+alwaysApply: false
+---
+
+# Frontend Nuxt
+
+- `pages → features → shared`. Features: `auth`, `resume`, `library`. Export only via each feature `index.ts`.
+- Vue 3 `<script setup lang="ts">`. Strict TypeScript; no `any`.
+- HTTP only in `*.api.ts` via `apiRequest` / `apiBlob` (`shared/api/http.ts`). Never `$fetch` or raw `fetch` in Vue components.
+- Pinia is **auth only** (`useAuthStore`). Wizard/result use `useState`; library uses `useAsyncData('saved-resumes')`.
+- SPA: `ssr: false`. Do not add SSR/`useFetch` for the wizard. Generate and export are user-triggered `fetch`.
+- Config: `useRuntimeConfig().public.apiBase` (`NUXT_PUBLIC_API_BASE`). JWT: `localStorage` key `resume_ai_token`.
+
+```ts
+// ❌ BAD
+await $fetch('/api/resume/generate', { body: form })
+
+// ✅ GOOD — feature API from a composable
+const gen = await generateResume(getPayload())
+```

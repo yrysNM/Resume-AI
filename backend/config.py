@@ -48,7 +48,7 @@ class Settings:
     ollama_base_url: str = "http://127.0.0.1:11434/v1"
     ollama_model: str = "llama3.2"
     # OpenAI SDK requires a non-empty api_key; Ollama ignores it.
-    ollama_api_key: str = "ollama"
+    ollama_api_key: str = "d31569bafcf44289887164d5bfcd96dc.2ViN69XdzjE8ZJFmIawMcyYb"
 
     # BERT / sentence-transformers (analysis)
     bert_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"

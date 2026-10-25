@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import init_db
@@ -26,9 +25,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Explicit origins for Nuxt (:3000). Auth uses Bearer JWT in Authorization —
+# allow_credentials is not required.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -50,6 +52,3 @@ def health():
 
 app.include_router(auth_router.router)
 app.include_router(resumes.router)
-
-# Static mount must be last so /api/* routes take precedence.
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")

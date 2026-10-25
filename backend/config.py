@@ -20,6 +20,21 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _env_cors_origins(default: tuple[str, ...]) -> tuple[str, ...]:
+    raw = os.getenv("CORS_ORIGINS")
+    if raw is None or not raw.strip():
+        return default
+    origins = tuple(part.strip() for part in raw.split(",") if part.strip())
+    return origins or default
+
+
+# Nuxt dev server origins (Bearer JWT via Authorization; credentials not required).
+_DEFAULT_CORS_ORIGINS: tuple[str, ...] = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+)
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "Resume AI API"
@@ -27,7 +42,7 @@ class Settings:
     secret_key: str = "change-me-in-production-resume-ai-demo-secret"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24  # 24 hours
-    cors_origins: tuple[str, ...] = ("*",)
+    cors_origins: tuple[str, ...] = _DEFAULT_CORS_ORIGINS
 
     # Groq (primary LLM for resume generation — free tier available)
     groq_api_key: str = ""
@@ -53,6 +68,7 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(
             os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(Settings.access_token_expire_minutes))
         ),
+        cors_origins=_env_cors_origins(Settings.cors_origins),
         groq_api_key=os.getenv("GROQ_API_KEY", ""),
         groq_model=os.getenv("GROQ_MODEL", Settings.groq_model),
         groq_base_url=os.getenv("GROQ_BASE_URL", Settings.groq_base_url),

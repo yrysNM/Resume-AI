@@ -29,11 +29,11 @@ class Settings:
     access_token_expire_minutes: int = 60 * 24  # 24 hours
     cors_origins: tuple[str, ...] = ("*",)
 
-    # Groq (primary LLM for resume generation — free tier available)
-    groq_api_key: str = ""
-    # Models available to free Groq accounts change over time; override via GROQ_MODEL.
-    groq_model: str = "qwen/qwen3.8-27b"
-    groq_base_url: str = "https://api.groq.com/openai/v1"
+    # Ollama (local LLM for resume generation — no cloud API key required)
+    ollama_base_url: str = "http://127.0.0.1:11434/v1"
+    ollama_model: str = "llama3.2"
+    # OpenAI SDK requires a non-empty api_key; Ollama ignores it.
+    ollama_api_key: str = "ollama"
 
     # BERT / sentence-transformers (analysis)
     bert_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -53,9 +53,9 @@ def get_settings() -> Settings:
         access_token_expire_minutes=int(
             os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(Settings.access_token_expire_minutes))
         ),
-        groq_api_key=os.getenv("GROQ_API_KEY", ""),
-        groq_model=os.getenv("GROQ_MODEL", Settings.groq_model),
-        groq_base_url=os.getenv("GROQ_BASE_URL", Settings.groq_base_url),
+        ollama_base_url=os.getenv("OLLAMA_BASE_URL", Settings.ollama_base_url),
+        ollama_model=os.getenv("OLLAMA_MODEL", Settings.ollama_model),
+        ollama_api_key=os.getenv("OLLAMA_API_KEY", Settings.ollama_api_key),
         bert_model_name=os.getenv("BERT_MODEL_NAME", Settings.bert_model_name),
         bert_keyword_threshold=float(
             os.getenv("BERT_KEYWORD_THRESHOLD", str(Settings.bert_keyword_threshold))

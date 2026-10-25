@@ -1,4 +1,4 @@
-"""Unit tests for Groq/BERT orchestration (Groq mocked; BERT offline)."""
+"""Unit tests for Ollama/BERT orchestration (Ollama mocked; BERT offline)."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ os.environ["GROQ_API_KEY"] = ""
 os.environ["OPENAI_API_KEY"] = ""
 
 from schemas import ExperienceItem, PersonalInfo, ResumeRequest  # noqa: E402
-from services import bert_analyze, groq_generate, resume_logic  # noqa: E402
+from services import bert_analyze, ollama_generate, resume_logic  # noqa: E402
 
 
 def _sample_payload() -> ResumeRequest:
@@ -50,41 +50,61 @@ class PipelineTests(unittest.TestCase):
         self.assertLessEqual(analysis.match_score, 100)
         self.assertTrue(analysis.keywords_found)
 
-    def test_groq_fallback_label_when_no_key(self):
-        text, label, used = groq_generate.generate_with_fallback(_sample_payload())
+    def test_ollama_fallback_when_connection_fails(self):
+        from openai import APIConnectionError
+
+        with patch.object(ollama_generate, "ollama_configured", return_value=True), patch(
+            "services.ollama_generate.OpenAI"
+        ) as client_cls:
+            client_cls.return_value.chat.completions.create.side_effect = APIConnectionError(
+                request=MagicMock()
+            )
+            with patch("services.ollama_generate.settings") as st:
+                st.ollama_api_key = "ollama"
+                st.ollama_model = "llama3.2"
+                st.ollama_base_url = "http://127.0.0.1:11434/v1"
+                st.ai_allow_fallback = True
+                text, label, used = ollama_generate.generate_with_fallback(_sample_payload())
         self.assertFalse(used)
-        self.assertEqual(label, "template")
+        self.assertEqual(label, "template(ollama-connection-failed)")
         self.assertIn("Test User", text)
 
     def test_generate_and_analyze_honest_label(self):
-        text, analysis, generated_by = resume_logic.generate_and_analyze(_sample_payload())
+        # Force connection failure so we don't need a live Ollama for this unit test.
+        from openai import APIConnectionError
+
+        with patch("services.ollama_generate.OpenAI") as client_cls:
+            client_cls.return_value.chat.completions.create.side_effect = APIConnectionError(
+                request=MagicMock()
+            )
+            text, analysis, generated_by = resume_logic.generate_and_analyze(_sample_payload())
         self.assertIn("Test User", text)
         self.assertIn("template", generated_by)
         self.assertIn("sentence-transformers", generated_by)
         self.assertNotIn("(demo)", generated_by)
         self.assertIsNotNone(analysis.match_score)
 
-    def test_mocked_groq_success_label(self):
+    def test_mocked_ollama_success_label(self):
         fake_msg = MagicMock()
-        fake_msg.content = "Groq Resume\nSkills: React"
+        fake_msg.content = "Ollama Resume\nSkills: React"
         fake_choice = MagicMock()
         fake_choice.message = fake_msg
         fake_resp = MagicMock()
         fake_resp.choices = [fake_choice]
 
-        with patch.object(groq_generate, "groq_configured", return_value=True), patch(
-            "services.groq_generate.OpenAI"
+        with patch.object(ollama_generate, "ollama_configured", return_value=True), patch(
+            "services.ollama_generate.OpenAI"
         ) as client_cls:
             client_cls.return_value.chat.completions.create.return_value = fake_resp
-            with patch("services.groq_generate.settings") as st:
-                st.groq_api_key = "gsk-test"
-                st.groq_model = "qwen/qwen3.8-27b"
-                st.groq_base_url = "https://api.groq.com/openai/v1"
+            with patch("services.ollama_generate.settings") as st:
+                st.ollama_api_key = "ollama"
+                st.ollama_model = "llama3.2"
+                st.ollama_base_url = "http://127.0.0.1:11434/v1"
                 st.ai_allow_fallback = True
-                text, label, used = groq_generate.generate_with_fallback(_sample_payload())
+                text, label, used = ollama_generate.generate_with_fallback(_sample_payload())
         self.assertTrue(used)
-        self.assertEqual(label, "qwen/qwen3.8-27b")
-        self.assertTrue(text.startswith("Groq Resume"))
+        self.assertEqual(label, "llama3.2")
+        self.assertTrue(text.startswith("Ollama Resume"))
 
     def test_rate_limit_fallback_label(self):
         from openai import RateLimitError
@@ -94,18 +114,18 @@ class PipelineTests(unittest.TestCase):
             response=MagicMock(status_code=429, headers={}),
             body={"error": {"code": "rate_limit_exceeded"}},
         )
-        with patch.object(groq_generate, "groq_configured", return_value=True), patch(
-            "services.groq_generate.OpenAI"
+        with patch.object(ollama_generate, "ollama_configured", return_value=True), patch(
+            "services.ollama_generate.OpenAI"
         ) as client_cls:
             client_cls.return_value.chat.completions.create.side_effect = err
-            with patch("services.groq_generate.settings") as st:
-                st.groq_api_key = "gsk-test"
-                st.groq_model = "qwen/qwen3.8-27b"
-                st.groq_base_url = "https://api.groq.com/openai/v1"
+            with patch("services.ollama_generate.settings") as st:
+                st.ollama_api_key = "ollama"
+                st.ollama_model = "llama3.2"
+                st.ollama_base_url = "http://127.0.0.1:11434/v1"
                 st.ai_allow_fallback = True
-                text, label, used = groq_generate.generate_with_fallback(_sample_payload())
+                text, label, used = ollama_generate.generate_with_fallback(_sample_payload())
         self.assertFalse(used)
-        self.assertEqual(label, "template(groq-rate-limited)")
+        self.assertEqual(label, "template(ollama-rate-limited)")
         self.assertIn("Test User", text)
 
 

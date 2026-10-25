@@ -1,0 +1,20 @@
+---
+description: Keep KK, RU, and EN locale keys in sync
+globs: frontend/i18n/locales/*.json,frontend/app/components/LangSwitch.vue
+alwaysApply: false
+---
+
+# i18n
+
+Default locale is `kk`. Codes: `kk`, `ru`, `en` (`no_prefix`). Messages: `frontend/i18n/locales/{kk,ru,en}.json`. Language UI: `LangSwitch.vue`.
+
+Add or rename a UI string in **all three** JSON files in the same change.
+
+```json
+// ❌ BAD — only en.json
+{ "export_failed": "Export failed" }
+
+// ✅ GOOD — same key in kk.json, ru.json, and en.json
+```
+
+Do not add a fourth locale or change `defaultLocale` unless asked. Keep `LangSwitch` on `kk | ru | en` only.

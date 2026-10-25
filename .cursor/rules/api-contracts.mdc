@@ -1,0 +1,30 @@
+---
+description: Keep Pydantic and Zod schemas in lockstep
+globs: backend/schemas.py,frontend/app/shared/schemas/**
+alwaysApply: false
+---
+
+# API contracts
+
+`frontend/app/shared/schemas/` (Zod) must mirror `backend/schemas.py` (Pydantic). Change both in the same task.
+
+Keep aligned: `ResumeRequest` (`personal`, `skills`, `experience`, `education`, `target_job`), `GenerateResponse` (`id`, `resume_text`, `generated_by`, `analysis`), auth (`UserRegister`, `UserLogin`, `TokenResponse`, `UserOut`), library (`ResumeSummary`, `ResumeDetail`).
+
+```ts
+// ❌ BAD — extra field; backend will 422
+export const resumeRequestSchema = z.object({
+  personal: personalInfoSchema,
+  headline: z.string()
+})
+
+// ✅ GOOD — same fields as schemas.py
+export const resumeRequestSchema = z.object({
+  personal: personalInfoSchema,
+  skills: z.array(z.string()).default([]),
+  experience: z.array(experienceItemSchema).default([]),
+  education: z.string().default(''),
+  target_job: z.string().default('')
+})
+```
+
+Parse API payloads with these schemas in `*.api.ts`. Do not invent extra envelope fields.

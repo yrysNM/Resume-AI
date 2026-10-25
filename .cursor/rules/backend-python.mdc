@@ -1,0 +1,28 @@
+---
+description: FastAPI routers, Pydantic schemas, JWT, and services conventions
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Backend Python
+
+- Keep routers thin. Ollama, BERT, heuristic, and export live in `services/`.
+- Request/response models belong in `schemas.py`. Mirror any change in `frontend/app/shared/schemas/`.
+- Protect private routes with `Depends(get_current_user)`. Filter resumes by `current_user.id`; 404 for other users.
+- Raise `HTTPException`. Never print tokens, passwords, or API keys.
+
+```python
+# ❌ BAD — unscoped query
+row = db.query(Resume).filter(Resume.id == resume_id).first()
+
+# ✅ GOOD
+row = db.query(Resume).filter(
+    Resume.id == resume_id, Resume.user_id == current_user.id
+).first()
+if row is None:
+    raise HTTPException(status_code=404, detail="Resume not found")
+```
+
+- Persist a `Resume` row only on generate. Analyze must not write.
+- `generated_by` names the engines that actually ran. Honor `AI_ALLOW_FALLBACK` (fallback vs 503).
+- Ask before Alembic, Postgres, extra LLM providers, or rate limits.

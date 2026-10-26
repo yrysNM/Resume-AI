@@ -9,7 +9,7 @@ export function useResumeLibrary() {
   const toast = useToast()
   const auth = useAuth()
   const { setResult, clearResult, result } = useResumeResult()
-  const { showStep } = useResumeWizard()
+  const { showStep, applyLayout } = useResumeWizard()
 
   const {
     data: items,
@@ -31,11 +31,14 @@ export function useResumeLibrary() {
   async function open(id: number): Promise<void> {
     try {
       const detail = await getResume(id)
+      applyLayout(detail.language, detail.template)
       setResult({
         gen: {
           id: detail.id,
           resume_text: detail.resume_text,
-          generated_by: detail.generated_by || ''
+          generated_by: detail.generated_by || '',
+          language: detail.language,
+          template: detail.template
         },
         analysis: detail.analysis || {
           completeness_score: 0,

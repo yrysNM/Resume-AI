@@ -8,7 +8,7 @@ alwaysApply: false
 
 `frontend/app/shared/schemas/` (Zod) must mirror `backend/schemas.py` (Pydantic). Change both in the same task.
 
-Keep aligned: `ResumeRequest` (`personal`, `skills`, `experience`, `education`, `target_job`), `GenerateResponse` (`id`, `resume_text`, `generated_by`, `analysis`), auth (`UserRegister`, `UserLogin`, `TokenResponse`, `UserOut`), library (`ResumeSummary`, `ResumeDetail`).
+Keep aligned: `ResumeRequest` (`personal`, `skills`, `experience`, `education`, `target_job`, `language`, `template`), `GenerateResponse` (`id`, `resume_text`, `generated_by`, `language`, `template`, `analysis`), auth (`UserRegister` including `role` `seeker`|`hr` default `seeker`, `UserLogin`, `TokenResponse`, `UserOut` including `role`), library (`ResumeSummary`, `ResumeDetail`), HR/jobs (`CompanyCreate`/`CompanyUpdate`/`CompanyOut`, `VacancyCreate`/`VacancyUpdate`/`VacancyOut`, `JobOut`, `ApplyRequest`, `SeekerApplicationOut`, `HrApplicationOut`, `HrDashboard`/`SeekerDashboard`).
 
 ```ts
 // ❌ BAD — extra field; backend will 422
@@ -23,7 +23,9 @@ export const resumeRequestSchema = z.object({
   skills: z.array(z.string()).default([]),
   experience: z.array(experienceItemSchema).default([]),
   education: z.string().default(''),
-  target_job: z.string().default('')
+  target_job: z.string().default(''),
+  language: resumeLanguageSchema.default('kk'),
+  template: resumeTemplateSchema.default('classic')
 })
 ```
 

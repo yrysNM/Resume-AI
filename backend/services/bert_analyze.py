@@ -11,6 +11,7 @@ import numpy as np
 from config import settings
 from schemas import AnalysisIssue, AnalysisResponse, ResumeRequest
 from services import heuristic
+from services.resume_i18n import issue_copy_for
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,18 @@ def _cosine(a: np.ndarray, b: np.ndarray) -> float:
     if denom == 0:
         return 0.0
     return float(np.dot(a, b) / denom)
+
+
+def cosine_similarity(text_a: str, text_b: str) -> float:
+    """Return cosine similarity in [0, 1]. Raises BertUnavailable if the model cannot load."""
+    model = _load_model()
+    embeddings = model.encode(
+        [text_a.strip() or "(empty)", text_b.strip() or "(empty)"],
+        normalize_embeddings=True,
+    )
+    a = np.asarray(embeddings[0], dtype=np.float32)
+    b = np.asarray(embeddings[1], dtype=np.float32)
+    return max(0.0, min(1.0, _cosine(a, b)))
 
 
 def _resume_corpus(payload: ResumeRequest) -> str:
@@ -116,12 +129,13 @@ def analyze_with_bert(payload: ResumeRequest) -> AnalysisResponse:
 
     issues: list[AnalysisIssue] = heuristic.base_issues(payload, missing)
     if match_score < 55:
+        copy = issue_copy_for(payload.language)
         issues.append(
             AnalysisIssue(
-                section="Сәйкестік",
+                section=copy.match_section,
                 severity="high",
-                message="BERT ұқсастығы бойынша түйіндеме мақсатты лауазымға әлсіз сәйкес",
-                suggestion="Мақсатты жұмыс сипаттамасындағы негізгі дағдылар мен міндеттерді тәжірибеге қосыңыз",
+                message=copy.match_message,
+                suggestion=copy.match_suggestion,
             )
         )
 

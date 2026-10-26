@@ -1,9 +1,12 @@
 import { z } from 'zod'
 
+export const userRoleSchema = z.enum(['seeker', 'hr'])
+
 export const userRegisterSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
-  full_name: z.string().max(255).default('')
+  full_name: z.string().max(255).default(''),
+  role: userRoleSchema.default('seeker')
 })
 
 export const userLoginSchema = z.object({
@@ -20,9 +23,11 @@ export const userOutSchema = z.object({
   id: z.number(),
   email: z.string().email(),
   full_name: z.string(),
+  role: userRoleSchema.default('seeker'),
   created_at: z.string()
 })
 
+export type UserRole = z.infer<typeof userRoleSchema>
 export type UserRegister = z.infer<typeof userRegisterSchema>
 export type UserLogin = z.infer<typeof userLoginSchema>
 export type TokenResponse = z.infer<typeof tokenResponseSchema>

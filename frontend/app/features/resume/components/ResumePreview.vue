@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import ResumeDocument from './ResumeDocument.vue'
 import { useResumeExport } from '../composables/useResumeExport'
 import { useResumeResult } from '../composables/useResumeResult'
+import { useResumeWizard } from '../composables/useResumeWizard'
+import type { ResumeLanguage, ResumeTemplate } from '~/shared/schemas/resume'
 
 const { t } = useI18n()
 const { result } = useResumeResult()
+const { form } = useResumeWizard()
 const { pending, hasExportable, exportFormat } = useResumeExport()
 
-const previewText = computed(() => result.value?.gen?.resume_text || t('placeholder'))
+const previewText = computed(() => result.value?.gen?.resume_text || '')
 const generatedBy = computed(() => result.value?.gen?.generated_by || '')
+const previewLanguage = computed<ResumeLanguage>(() =>
+  result.value?.gen?.language || form.value.language
+)
+const previewTemplate = computed<ResumeTemplate>(() => form.value.template)
 </script>
 
 <template>
@@ -16,7 +24,12 @@ const generatedBy = computed(() => result.value?.gen?.generated_by || '')
       {{ t('resume_box') }}
     </h4>
 
-    <pre class="flex-1 font-mono text-sm leading-relaxed whitespace-pre-wrap text-slate-300">{{ previewText }}</pre>
+    <ResumeDocument
+      :text="previewText"
+      :template="previewTemplate"
+      :language="previewLanguage"
+      :placeholder="t('placeholder')"
+    />
 
     <div class="mt-4 flex flex-wrap gap-2">
       <UButton

@@ -128,6 +128,82 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(label, "template(ollama-rate-limited)")
         self.assertIn("Test User", text)
 
+    def test_heuristic_english_headings(self):
+        from services.heuristic import build_resume_text
+        from services.resume_layout import layout_from_input_json, parse_resume_text
+
+        payload = _sample_payload().model_copy(update={"language": "en"})
+        text = build_resume_text(payload)
+        self.assertIn("EXPERIENCE", text)
+        self.assertIn("SKILLS", text)
+        self.assertIn("EDUCATION", text)
+        self.assertNotIn("ҚЫЗМЕТ ТӘЖІРИБЕСІ", text)
+        self.assertNotIn("ДАҒДЫЛАР", text)
+        parsed = parse_resume_text(text)
+        self.assertEqual(parsed.name, "Test User")
+        self.assertTrue(parsed.has_sections)
+        self.assertIn("React", parsed.skills)
+        language, template = layout_from_input_json(
+            '{"language":"ru","template":"modern"}'
+        )
+        self.assertEqual(language, "ru")
+        self.assertEqual(template, "modern")
+
+
+class RankTests(unittest.TestCase):
+    def test_heuristic_fallback_when_bert_offline(self):
+        from services import rank
+
+        resume = "python fastapi sql rest docker services"
+        with patch.object(
+            bert_analyze, "_load_model", side_effect=bert_analyze.BertUnavailable("offline")
+        ):
+            score, label = rank.rank_resume_against_vacancy(
+                resume, "backend developer", "Build REST APIs in Python"
+            )
+        self.assertEqual(label, "heuristic-keywords")
+        self.assertGreater(score, 50)
+        self.assertLessEqual(score, 100)
+
+    def test_raises_when_bert_offline_and_fallback_disabled(self):
+        from services import rank
+
+        with patch.object(
+            bert_analyze, "_load_model", side_effect=bert_analyze.BertUnavailable("offline")
+        ), patch("services.rank.settings") as st:
+            st.ai_allow_fallback = False
+            with self.assertRaises(bert_analyze.BertUnavailable):
+                rank.rank_resume_against_vacancy("resume text", "title", "description")
+
+    def test_unknown_title_uses_default_keywords(self):
+        from services import heuristic, rank
+
+        self.assertEqual(
+            heuristic.expected_keywords("quantum plumber"),
+            ["react", "python", "api", "sql"],
+        )
+        with patch.object(
+            bert_analyze, "_load_model", side_effect=bert_analyze.BertUnavailable("offline")
+        ):
+            score, label = rank.rank_resume_against_vacancy(
+                "python api sql react", "quantum plumber", "Pipe the qubits"
+            )
+        self.assertEqual(label, "heuristic-keywords")
+        self.assertGreater(score, 50)
+
+    def test_bert_rank_uses_vacancy_jd(self):
+        from services import rank
+
+        score, label = rank.rank_resume_against_vacancy(
+            "Frontend developer with React TypeScript HTML CSS and API work",
+            "frontend developer",
+            "We need React and TypeScript for our UI team.",
+        )
+        self.assertIn("MiniLM", label)
+        self.assertGreaterEqual(score, 0)
+        self.assertLessEqual(score, 100)
+        self.assertNotEqual(label, "heuristic-keywords")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,8 +17,10 @@ from schemas import (
     ResumeDetail,
     ResumeRequest,
     ResumeSummary,
+    ResumeTemplate,
 )
 from services import bert_analyze, export as export_service, ollama_generate, resume_logic
+from services.resume_layout import layout_from_input_json
 
 router = APIRouter(tags=["resumes"])
 
@@ -66,6 +68,8 @@ def generate_resume(
         resume_text=resume_text,
         format="plain",
         generated_by=generated_by,
+        language=payload.language,
+        template=payload.template,
         analysis=analysis,
     )
 
@@ -109,6 +113,7 @@ def get_resume(
     )
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+    language, template = layout_from_input_json(row.input_json)
     return ResumeDetail(
         id=row.id,
         title=row.title,
@@ -117,6 +122,8 @@ def get_resume(
         created_at=row.created_at,
         updated_at=row.updated_at,
         resume_text=row.resume_text,
+        language=language,
+        template=template,
         analysis=_analysis_from_row(row),
     )
 
@@ -142,6 +149,7 @@ def delete_resume(
 def export_resume(
     resume_id: int,
     fmt: Literal["pdf", "docx"] = Query(..., alias="format"),
+    template: ResumeTemplate | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Response:
@@ -152,8 +160,14 @@ def export_resume(
     )
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+    stored_language, stored_template = layout_from_input_json(row.input_json)
     try:
-        body, media_type, _ = export_service.export_bytes(row.resume_text, fmt)
+        body, media_type, _ = export_service.export_bytes(
+            row.resume_text,
+            fmt,
+            template=template or stored_template,
+            language=stored_language,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     title = row.title or "resume"

@@ -9,6 +9,8 @@ export function useAuth() {
     pending: computed(() => store.pending),
     isAuthenticated: computed(() => store.isAuthenticated),
     displayName: computed(() => store.displayName),
+    isHr: computed(() => store.isHr),
+    isSeeker: computed(() => store.isSeeker),
     modalOpen: computed({
       get: () => store.modalOpen,
       set: (value: boolean) => {

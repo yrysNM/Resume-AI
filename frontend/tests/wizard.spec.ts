@@ -41,5 +41,17 @@ describe('useResumeWizard', () => {
     expect(payload.personal.email).toBe('test@mail.kz')
     expect(payload.skills).toContain('React')
     expect(payload.experience.length).toBeGreaterThan(0)
+    expect(payload.language).toBe('kk')
+    expect(payload.template).toBe('classic')
+  })
+
+  it('updates generation language and template', async () => {
+    const { useResumeWizard } = await import('../app/features/resume/composables/useResumeWizard')
+    const wizard = useResumeWizard()
+    wizard.setLanguage('ru')
+    wizard.setTemplate('modern')
+    const payload = wizard.getPayload()
+    expect(payload.language).toBe('ru')
+    expect(payload.template).toBe('modern')
   })
 })

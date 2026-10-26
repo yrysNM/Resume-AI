@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from schemas import AnalysisIssue, AnalysisResponse, ResumeRequest
+from services.resume_i18n import headings_for, issue_copy_for
 
 SKILL_KEYWORDS = {
     "frontend developer": ["react", "javascript", "typescript", "html", "css", "api"],
@@ -26,6 +27,7 @@ def expected_keywords(target: str) -> list[str]:
 
 def build_resume_text(payload: ResumeRequest) -> str:
     p = payload.personal
+    headings = headings_for(payload.language)
     skills_line = ", ".join(payload.skills) if payload.skills else "—"
     exp_blocks = []
     for item in payload.experience:
@@ -37,16 +39,16 @@ def build_resume_text(payload: ResumeRequest) -> str:
     resume_text = f"""{p.full_name}
 {p.position} | {p.email} | {p.phone}
 
-ҚЫЗМЕТ ТӘЖІРИБЕСІ
+{headings.experience}
 {experience_text}
 
-ДАҒДЫЛАР
+{headings.skills}
 {skills_line}
 
-БІЛІМ
+{headings.education}
 {payload.education or '—'}
 
-Мақсатты лауазым: {payload.target_job or p.position}
+{headings.target}: {payload.target_job or p.position}
 """
     return resume_text.strip()
 
@@ -82,32 +84,33 @@ def analyze_resume(payload: ResumeRequest) -> AnalysisResponse:
 
 
 def base_issues(payload: ResumeRequest, missing: list[str]) -> list[AnalysisIssue]:
+    copy = issue_copy_for(payload.language)
     issues: list[AnalysisIssue] = []
     if len(payload.experience) < 1:
         issues.append(
             AnalysisIssue(
-                section="Тәжірибе",
+                section=copy.experience_section,
                 severity="high",
-                message="Жұмыс тәжірибесі бөлімі толтырылмаған",
-                suggestion="Кем дегенде бір жұмыс орны мен міндеттерін қосыңыз",
+                message=copy.experience_message,
+                suggestion=copy.experience_suggestion,
             )
         )
     if len(payload.skills) < 3:
         issues.append(
             AnalysisIssue(
-                section="Дағдылар",
+                section=copy.skills_section,
                 severity="medium",
-                message="Дағдылар тізімі тым қысқа",
-                suggestion="Мақсатты лауазымға сәйкес кем дегенде 5 дағды қосыңыз",
+                message=copy.skills_message,
+                suggestion=copy.skills_suggestion,
             )
         )
     for kw in missing[:2]:
         issues.append(
             AnalysisIssue(
-                section="Кілт сөздер",
+                section=copy.keywords_section,
                 severity="medium",
-                message=f"Жұмыс сипаттамасында '{kw}' кілт сөзі жоқ",
-                suggestion=f"'{kw}' дағдысын тәжірибе сипаттамасына енгізіңіз",
+                message=copy.keywords_message.format(kw=kw),
+                suggestion=copy.keywords_suggestion.format(kw=kw),
             )
         )
     return issues

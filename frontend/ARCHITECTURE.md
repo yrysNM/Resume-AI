@@ -22,14 +22,21 @@ frontend/
 │   ├── error.vue
 │   ├── assets/css/main.css
 │   ├── components/             # LangSwitch, WizardSteps (shell UI)
-│   ├── layouts/default.vue
-│   ├── middleware/auth.ts
-│   ├── pages/index.vue         # thin: sidebar + ResumeWizard
+│   ├── layouts/default.vue     # role-aware nav
+│   ├── middleware/             # auth.ts, hr.ts
+│   ├── pages/
+│   │   ├── index.vue           # wizard; logged-in HR → /hr
+│   │   ├── jobs.vue
+│   │   ├── dashboard.vue
+│   │   └── hr/                 # companies, vacancies, ranking
 │   ├── plugins/                # auth + locale bootstrap
 │   ├── features/
 │   │   ├── auth/               # store, api, LoginModal, AuthBar
 │   │   ├── resume/             # wizard form/state, generate, export, preview
 │   │   ├── library/            # saved list open/delete
+│   │   ├── hr/                 # companies, vacancies, ranked applicants
+│   │   ├── jobs/               # open vacancies + apply
+│   │   ├── dashboard/          # role stats cards
 │   │   └── i18n/               # locale feature marker
 │   └── shared/
 │       ├── api/http.ts         # fetch + Bearer + AppError + blob download
@@ -49,10 +56,12 @@ frontend/
 
 | Concern | Mechanism |
 |---------|-----------|
-| Auth user + JWT | Pinia `useAuthStore` (`resume_ai_token` in `localStorage`) |
+| Auth user + JWT + role | Pinia `useAuthStore` (`resume_ai_token` in `localStorage`) |
 | Wizard step + form | `useState` in `useResumeWizard` |
 | Generate/preview result | `useState` in `useResumeResult` |
 | Saved resumes | `useAsyncData('saved-resumes')` in `useResumeLibrary` |
+
+Roles: `seeker` (default) or `hr`. `isHr` / `isSeeker` come from `user.role`. After register, HR goes to `/hr` and seekers to `/`.
 
 ## Data flow
 
@@ -61,21 +70,34 @@ frontend/
 3. Result lands in `useResumeResult`; library list refreshes.
 4. Open/delete saved resumes updates result + step via library composable.
 
+Seekers apply from `/jobs` with a library resume. HR manages companies → vacancies → ranked applications.
+
 ## Auth
 
 - Public home wizard; generate / export call `requireAuth()` and open `LoginModal` on 401.
+- Logged-in HR on `/` is redirected to `/hr`. Generate and library stay available on the API for any authenticated user.
 - Plugin `auth.client.ts` refreshes `/api/auth/me` on startup.
-- Middleware `auth.ts` available for future protected routes (not on `/`).
+- Middleware `auth.ts` on `/jobs`, `/dashboard`, `/hr/**`. Middleware `hr.ts` keeps `/hr` HR-only.
+- Nav: seeker Resume / Jobs / Dashboard; HR Companies / Dashboard.
 
 ## API surface (client)
 
 | Method | Path | Feature |
 |--------|------|---------|
-| POST | `/api/auth/login`, `/api/auth/register` | auth |
-| GET | `/api/auth/me` | auth |
+| POST | `/api/auth/login`, `/api/auth/register` | auth (`role` on register) |
+| GET | `/api/auth/me` | auth (`UserOut.role`) |
 | POST | `/api/resume/generate`, `/api/resume/analyze` | resume |
 | GET/DELETE | `/api/resumes`, `/api/resumes/:id` | library |
-| GET | `/api/resumes/:id/export?format=` | resume export |
+| GET | `/api/resumes/:id/export?format=` | resume export (`template=` optional) |
+| CRUD | `/api/companies`, `/api/companies/:id/vacancies` | hr |
+| GET/PUT/DELETE | `/api/companies/:id/vacancies/:vacancy_id` | hr nested vacancy |
+| GET | `/api/vacancies/:id` | hr vacancy (ranking page) |
+| GET | `/api/vacancies/:id/applications` | hr ranking |
+| POST | `/api/vacancies/:id/rank` | hr re-rank |
+| GET | `/api/jobs` | jobs (seeker) |
+| POST | `/api/jobs/:id/apply` | jobs (`{ resume_id }`; 409 closed/duplicate) |
+| GET | `/api/applications` | seeker applications |
+| GET | `/api/dashboard` | `HrDashboard` \| `SeekerDashboard` (`role`) |
 
 Base URL: `runtimeConfig.public.apiBase` ← `NUXT_PUBLIC_API_BASE` (default `http://127.0.0.1:8000`).
 

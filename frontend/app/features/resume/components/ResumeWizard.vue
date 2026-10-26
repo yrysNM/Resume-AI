@@ -2,6 +2,7 @@
 import ExperienceList from './ExperienceList.vue'
 import AnalysisPanel from './AnalysisPanel.vue'
 import ResumePreview from './ResumePreview.vue'
+import ResumeOptions from './ResumeOptions.vue'
 import { useResumeGenerate } from '../composables/useResumeGenerate'
 import { useResumeWizard } from '../composables/useResumeWizard'
 
@@ -9,7 +10,7 @@ const emit = defineEmits<{
   generated: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const {
   step,
   form,
@@ -17,8 +18,15 @@ const {
   next,
   prev,
   addExperience,
-  removeExperience
+  removeExperience,
+  setLanguage,
+  setTemplate,
+  initLanguageFromLocale
 } = useResumeWizard()
+
+onMounted(() => {
+  initLanguageFromLocale(locale.value)
+})
 
 const { pending, generate } = useResumeGenerate(async () => {
   emit('generated')
@@ -143,6 +151,12 @@ async function onGenerate() {
         <h3 class="mb-5 text-lg font-semibold text-sky-400">
           {{ t('panel4') }}
         </h3>
+        <ResumeOptions
+          :language="form.language"
+          :template="form.template"
+          @update:language="setLanguage"
+          @update:template="setTemplate"
+        />
         <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <ResumePreview />
           <AnalysisPanel />

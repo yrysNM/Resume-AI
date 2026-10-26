@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { UserRole } from '~/shared/schemas/auth'
 import { useAuth } from '../composables/useAuth'
 
 const { t } = useI18n()
@@ -7,6 +8,7 @@ const {
   authMode,
   authError,
   pending,
+  isHr,
   closeModal,
   submitAuth
 } = useAuth()
@@ -14,14 +16,21 @@ const {
 const form = reactive({
   full_name: '',
   email: '',
-  password: ''
+  password: '',
+  role: 'seeker' as UserRole
 })
+
+const roleItems = computed(() => [
+  { label: t('role_seeker'), value: 'seeker' },
+  { label: t('role_hr'), value: 'hr' }
+])
 
 watch(modalOpen, (open) => {
   if (open) {
     form.full_name = ''
     form.email = ''
     form.password = ''
+    form.role = 'seeker'
   }
 })
 
@@ -30,15 +39,22 @@ const title = computed(() =>
 )
 
 async function onSubmit() {
+  const registering = authMode.value === 'register'
   const ok = await submitAuth({
     email: form.email.trim(),
     password: form.password,
-    full_name: form.full_name.trim()
+    full_name: form.full_name.trim(),
+    role: form.role
   })
-  if (ok) {
-    form.full_name = ''
-    form.email = ''
-    form.password = ''
+  if (!ok) return
+  form.full_name = ''
+  form.email = ''
+  form.password = ''
+  form.role = 'seeker'
+  if (isHr.value) {
+    await navigateTo('/hr')
+  } else if (registering) {
+    await navigateTo('/')
   }
 }
 </script>
@@ -92,6 +108,17 @@ async function onSubmit() {
             minlength="8"
             :autocomplete="authMode === 'register' ? 'new-password' : 'current-password'"
             class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          v-if="authMode === 'register'"
+          :label="t('role_label')"
+          name="role"
+        >
+          <URadioGroup
+            v-model="form.role"
+            :items="roleItems"
           />
         </UFormField>
 

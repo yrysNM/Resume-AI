@@ -1,2 +1,5 @@
 export * from './auth'
 export * from './resume'
+export * from './hr'
+export * from './jobs'
+export * from './dashboard'

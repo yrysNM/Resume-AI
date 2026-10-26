@@ -1,13 +1,14 @@
 import { useAuthStore } from '~/features/auth/auth.store'
 
 /**
- * Optional route guard. Home stays public; generate/export gate via useAuth.requireAuth.
+ * Route guard for authenticated pages. Home stays public.
  */
-export default defineNuxtRouteMiddleware(() => {
+export default defineNuxtRouteMiddleware((to) => {
   const auth = useAuthStore()
   if (!auth.ready) return
   if (!auth.isAuthenticated) {
     auth.openModal('login')
+    if (to.path !== '/') return navigateTo('/')
     return abortNavigation()
   }
 })

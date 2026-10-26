@@ -1,5 +1,10 @@
 import { computed } from 'vue'
-import type { ExperienceItem, ResumeRequest } from '~/shared/schemas/resume'
+import type {
+  ExperienceItem,
+  ResumeLanguage,
+  ResumeRequest,
+  ResumeTemplate
+} from '~/shared/schemas/resume'
 
 export const WIZARD_STEPS = 4 as const
 
@@ -22,7 +27,10 @@ export function useResumeWizard() {
     target_job: 'frontend developer',
     education: 'Test Education',
     skillsText: 'React, TypeScript, JavaScript, HTML, CSS, REST API',
-    experience: [{ ...DEFAULT_EXPERIENCE }] as ExperienceItem[]
+    experience: [{ ...DEFAULT_EXPERIENCE }] as ExperienceItem[],
+    language: 'kk' as ResumeLanguage,
+    template: 'classic' as ResumeTemplate,
+    languageTouched: false
   }))
 
   const progress = computed(() => `${step.value * 25}%`)
@@ -89,7 +97,31 @@ export function useResumeWizard() {
       skills,
       experience,
       education: form.value.education.trim(),
-      target_job: form.value.target_job.trim()
+      target_job: form.value.target_job.trim(),
+      language: form.value.language,
+      template: form.value.template
+    }
+  }
+
+  function setLanguage(language: ResumeLanguage) {
+    form.value.language = language
+    form.value.languageTouched = true
+  }
+
+  function setTemplate(template: ResumeTemplate) {
+    form.value.template = template
+  }
+
+  function applyLayout(language: ResumeLanguage, template: ResumeTemplate) {
+    form.value.language = language
+    form.value.template = template
+    form.value.languageTouched = true
+  }
+
+  function initLanguageFromLocale(locale: string) {
+    if (form.value.languageTouched) return
+    if (locale === 'kk' || locale === 'ru' || locale === 'en') {
+      form.value.language = locale
     }
   }
 
@@ -103,6 +135,10 @@ export function useResumeWizard() {
     prev,
     addExperience,
     removeExperience,
-    getPayload
+    getPayload,
+    setLanguage,
+    setTemplate,
+    applyLayout,
+    initLanguageFromLocale
   }
 }

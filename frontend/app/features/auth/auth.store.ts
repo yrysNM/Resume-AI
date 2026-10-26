@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { readToken, writeToken } from '~/shared/utils/token'
-import type { UserOut } from '~/shared/schemas/auth'
+import type { UserOut, UserRole } from '~/shared/schemas/auth'
 import { fetchCurrentUser, loginUser, registerUser } from './auth.api'
 
 export type AuthMode = 'login' | 'register'
@@ -17,6 +17,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => Boolean(user.value && token.value))
   const displayName = computed(() => user.value?.full_name || user.value?.email || '')
+  const isHr = computed(() => user.value?.role === 'hr')
+  const isSeeker = computed(() => user.value?.role === 'seeker')
 
   function openModal(mode: AuthMode = 'login') {
     authMode.value = mode
@@ -52,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     email: string
     password: string
     full_name?: string
+    role?: UserRole
   }): Promise<boolean> {
     pending.value = true
     authError.value = null
@@ -60,7 +63,8 @@ export const useAuthStore = defineStore('auth', () => {
         ? await registerUser({
             email: input.email,
             password: input.password,
-            full_name: input.full_name || ''
+            full_name: input.full_name || '',
+            role: input.role || 'seeker'
           })
         : await loginUser({
             email: input.email,
@@ -101,6 +105,8 @@ export const useAuthStore = defineStore('auth', () => {
     authError,
     isAuthenticated,
     displayName,
+    isHr,
+    isSeeker,
     openModal,
     closeModal,
     refreshSession,

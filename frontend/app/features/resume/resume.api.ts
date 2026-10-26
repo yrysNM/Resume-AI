@@ -41,10 +41,14 @@ export async function deleteResume(id: number): Promise<void> {
   await apiRequest<unknown>(`/api/resumes/${id}`, { method: 'DELETE' })
 }
 
-export async function exportResume(id: number, format: 'pdf' | 'docx'): Promise<void> {
+export async function exportResume(
+  id: number,
+  format: 'pdf' | 'docx',
+  template?: string
+): Promise<void> {
   const { blob, filename } = await apiBlob(`/api/resumes/${id}/export`, {
     method: 'GET',
-    query: { format }
+    query: { format, template }
   })
   downloadBlob(blob, filename || `resume.${format}`)
 }

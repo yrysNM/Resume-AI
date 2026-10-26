@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from config import settings
@@ -31,3 +31,17 @@ def init_db() -> None:
     import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _ensure_sqlite_user_role_column()
+
+
+def _ensure_sqlite_user_role_column() -> None:
+    """create_all will not add columns to an existing users table."""
+    if not settings.database_url.startswith("sqlite"):
+        return
+    with engine.connect() as conn:
+        rows = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+        names = {row[1] for row in rows}
+        if "role" in names:
+            return
+        conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(16) DEFAULT 'seeker'"))
+        conn.commit()

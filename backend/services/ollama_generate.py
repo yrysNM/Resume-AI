@@ -9,6 +9,7 @@ from openai import APIConnectionError, APIError, AuthenticationError, OpenAI, Ra
 from config import settings
 from schemas import ResumeRequest
 from services import heuristic
+from services.resume_i18n import headings_for, language_name
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +44,16 @@ def generate_resume_text(payload: ResumeRequest) -> str:
         )
     experience_block = "\n".join(experience_lines) if experience_lines else "(none listed)"
 
+    headings = headings_for(payload.language)
+    lang_label = language_name(payload.language)
     system = (
-        "You are a professional resume writer. Produce a concise plain-text CV. "
-        "Use clear section headings. Prefer Kazakh section titles "
-        "(ҚЫЗМЕТ ТӘЖІРИБЕСІ, ДАҒДЫЛАР, БІЛІМ) with English content when the "
-        "candidate data is in English. Do not invent employers, degrees, or skills "
-        "that are not supported by the provided facts. Return only the resume text."
+        f"You are a professional resume writer. Produce a concise plain-text CV "
+        f"written entirely in {lang_label}. Keep the candidate's name, email, and "
+        "phone unchanged. Use these exact section headings on their own lines: "
+        f"{headings.experience}, {headings.skills}, {headings.education}. "
+        f"End with a line '{headings.target}: ...' using the target job. "
+        "Do not invent employers, degrees, or skills that are not supported by "
+        "the provided facts. Return only the resume text."
     )
     user = f"""Candidate:
 Name: {payload.personal.full_name}

@@ -9,8 +9,18 @@ definePageMeta({
 })
 
 const { t } = useI18n()
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, isHr, ready } = useAuth()
 const { refresh } = useResumeLibrary()
+
+watch(
+  [ready, isAuthenticated, isHr],
+  ([isReady, authed, hr]) => {
+    if (isReady && authed && hr) {
+      void navigateTo('/hr')
+    }
+  },
+  { immediate: true }
+)
 
 useSeoMeta({
   title: () => t('doc_title'),

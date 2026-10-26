@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+export const resumeLanguageSchema = z.enum(['kk', 'ru', 'en'])
+export const resumeTemplateSchema = z.enum(['classic', 'modern', 'minimal'])
+
 export const personalInfoSchema = z.object({
   full_name: z.string().min(1),
   email: z.string().email(),
@@ -19,7 +22,9 @@ export const resumeRequestSchema = z.object({
   skills: z.array(z.string()).default([]),
   experience: z.array(experienceItemSchema).default([]),
   education: z.string().default(''),
-  target_job: z.string().default('')
+  target_job: z.string().default(''),
+  language: resumeLanguageSchema.default('kk'),
+  template: resumeTemplateSchema.default('classic')
 })
 
 export const analysisIssueSchema = z.object({
@@ -44,6 +49,8 @@ export const generateResponseSchema = z.object({
   resume_text: z.string(),
   format: z.string().default('plain'),
   generated_by: z.string(),
+  language: resumeLanguageSchema.default('kk'),
+  template: resumeTemplateSchema.default('classic'),
   analysis: analysisResponseSchema.nullable().optional()
 })
 
@@ -58,9 +65,13 @@ export const resumeSummarySchema = z.object({
 
 export const resumeDetailSchema = resumeSummarySchema.extend({
   resume_text: z.string(),
+  language: resumeLanguageSchema.default('kk'),
+  template: resumeTemplateSchema.default('classic'),
   analysis: analysisResponseSchema.nullable().optional()
 })
 
+export type ResumeLanguage = z.infer<typeof resumeLanguageSchema>
+export type ResumeTemplate = z.infer<typeof resumeTemplateSchema>
 export type PersonalInfo = z.infer<typeof personalInfoSchema>
 export type ExperienceItem = z.infer<typeof experienceItemSchema>
 export type ResumeRequest = z.infer<typeof resumeRequestSchema>

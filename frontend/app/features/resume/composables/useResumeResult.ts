@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import type { AnalysisResponse, GenerateResponse } from '~/shared/schemas/resume'
 
 export interface ResumeResult {
-  gen: Pick<GenerateResponse, 'id' | 'resume_text' | 'generated_by'> & {
+  gen: Pick<GenerateResponse, 'id' | 'resume_text' | 'generated_by' | 'language' | 'template'> & {
     format?: string
   }
   analysis: AnalysisResponse | {

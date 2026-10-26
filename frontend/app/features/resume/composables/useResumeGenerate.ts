@@ -28,6 +28,8 @@ export function useResumeGenerate(onSuccess?: () => void | Promise<void>) {
           id: gen.id,
           resume_text: gen.resume_text,
           generated_by: gen.generated_by,
+          language: gen.language,
+          template: gen.template,
           format: gen.format
         },
         analysis

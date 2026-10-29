@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import init_db
-from routers import auth_router, companies, dashboard, jobs, resumes, vacancies
+from routers import auth_router, companies, dashboard, hh, jobs, resumes, vacancies
 
 
 @asynccontextmanager
@@ -57,3 +57,4 @@ app.include_router(companies.router)
 app.include_router(vacancies.router)
 app.include_router(jobs.router)
 app.include_router(dashboard.router)
+app.include_router(hh.router)

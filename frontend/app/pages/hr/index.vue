@@ -12,7 +12,10 @@ useSeoMeta({
 <template>
   <main class="flex flex-col gap-6">
     <HrHome />
-    <HhVacancyMarket />
+    <HhVacancyMarket
+      default-category="hr"
+      cache-key="hh-hr-vacancies"
+    />
     <DashboardView :heading="false" />
   </main>
 </template>

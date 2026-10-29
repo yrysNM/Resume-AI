@@ -1,4 +1,4 @@
-"""HeadHunter public vacancy search (HR market watch). Stdlib urllib only."""
+"""HeadHunter public vacancy search. Stdlib urllib only."""
 
 from __future__ import annotations
 
@@ -15,8 +15,17 @@ from schemas import HhVacancyList, HhVacancyOut
 
 logger = logging.getLogger(__name__)
 
-# Category 12 — Управление персоналом, тренинги (HR / training roles)
-_HH_HR_ROLES = ("17", "38", "69", "117", "118", "153", "171", "181")
+# Curated professional_role groups (Kazakhstan / hh.kz). Empty tuple = no role filter.
+HH_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "hr": ("17", "38", "69", "117", "118", "153", "171", "181"),
+    "it": ("96", "104", "107", "112", "114", "116", "121", "124", "148", "160"),
+    "sales": ("6", "10", "70", "71", "72", "75", "76"),
+    "marketing": ("3", "9", "34", "55", "68", "99"),
+    "finance": ("22", "23", "24", "25", "150", "157"),
+    "all": (),
+}
+
+DEFAULT_CATEGORY = "hr"
 _HIGHLIGHT_RE = re.compile(r"</?highlighttext>", re.IGNORECASE)
 _TIMEOUT_S = 10
 
@@ -25,9 +34,22 @@ class HhUnavailable(Exception):
     """Raised when HeadHunter cannot be reached or returns a non-200."""
 
 
-def fetch_hr_vacancies(page: int = 0) -> HhVacancyList:
+def list_categories() -> list[str]:
+    return list(HH_CATEGORIES.keys())
+
+
+def fetch_vacancies(
+    *,
+    page: int = 0,
+    text: str = "",
+    category: str = DEFAULT_CATEGORY,
+) -> HhVacancyList:
     page = max(0, int(page))
     per_page = max(1, min(100, int(settings.hh_per_page)))
+    category_key = (category or DEFAULT_CATEGORY).strip().lower()
+    if category_key not in HH_CATEGORIES:
+        category_key = DEFAULT_CATEGORY
+    search = (text or "").strip()[:200]
 
     query: list[tuple[str, str]] = [
         ("area", str(settings.hh_area)),
@@ -35,7 +57,9 @@ def fetch_hr_vacancies(page: int = 0) -> HhVacancyList:
         ("page", str(page)),
         ("order_by", "publication_time"),
     ]
-    for role in _HH_HR_ROLES:
+    if search:
+        query.append(("text", search))
+    for role in HH_CATEGORIES[category_key]:
         query.append(("professional_role", role))
 
     base = settings.hh_api_base.rstrip("/")
@@ -74,6 +98,11 @@ def fetch_hr_vacancies(page: int = 0) -> HhVacancyList:
         per_page=int(payload.get("per_page") or per_page),
         items=items,
     )
+
+
+# Back-compat alias used by older call sites / docs.
+def fetch_hr_vacancies(page: int = 0) -> HhVacancyList:
+    return fetch_vacancies(page=page, category="hr")
 
 
 def _strip_highlight(value: str | None) -> str | None:

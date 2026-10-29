@@ -94,7 +94,8 @@ Seekers apply from `/jobs` with a library resume. HR manages companies → vacan
 | GET | `/api/vacancies/:id` | hr vacancy (ranking page) |
 | GET | `/api/vacancies/:id/applications` | hr ranking |
 | POST | `/api/vacancies/:id/rank` | hr re-rank |
-| GET | `/api/hh/vacancies` | hr market-watch (`?page=`; 503 if HH down) |
+| GET | `/api/hh/vacancies` | hh.kz search for any auth user (`?page=&text=&category=`; 503 if HH down) |
+| GET | `/api/hh/categories` | category ids |
 | GET | `/api/jobs` | jobs (seeker) |
 | POST | `/api/jobs/:id/apply` | jobs (`{ resume_id }`; 409 closed/duplicate) |
 | GET | `/api/applications` | seeker applications |

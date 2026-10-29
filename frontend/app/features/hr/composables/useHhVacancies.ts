@@ -1,5 +1,5 @@
 import { useAuth } from '~/features/auth/composables/useAuth'
-import type { HhVacancyList } from '~/shared/schemas/hh'
+import type { HhCategory, HhVacancyList } from '~/shared/schemas/hh'
 import { listHhVacancies } from '../hh.api'
 
 function emptyList(): HhVacancyList {
@@ -12,9 +12,22 @@ function emptyList(): HhVacancyList {
   }
 }
 
-export function useHhVacancies() {
+export interface UseHhVacanciesOptions {
+  /** Initial category tab. */
+  defaultCategory?: HhCategory
+  /** AsyncData cache key suffix so HR and jobs pages do not clash. */
+  cacheKey?: string
+}
+
+export function useHhVacancies(options: UseHhVacanciesOptions = {}) {
   const auth = useAuth()
   const page = ref(0)
+  const category = ref<HhCategory>(options.defaultCategory ?? 'hr')
+  const searchInput = ref('')
+  const searchText = ref('')
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  const cacheKey = options.cacheKey ?? 'hh-vacancies'
 
   const {
     data: list,
@@ -22,14 +35,23 @@ export function useHhVacancies() {
     error,
     refresh
   } = useAsyncData(
-    'hh-hr-vacancies',
+    cacheKey,
     async () => {
-      if (!auth.isAuthenticated.value || !auth.isHr.value) return emptyList()
-      return listHhVacancies(page.value)
+      if (!auth.isAuthenticated.value) return emptyList()
+      return listHhVacancies({
+        page: page.value,
+        text: searchText.value,
+        category: category.value
+      })
     },
     {
       default: emptyList,
-      watch: [page, () => auth.isAuthenticated.value, () => auth.isHr.value]
+      watch: [
+        page,
+        category,
+        searchText,
+        () => auth.isAuthenticated.value
+      ]
     }
   )
 
@@ -46,15 +68,53 @@ export function useHhVacancies() {
     page.value += 1
   }
 
+  function setCategory(next: HhCategory): void {
+    if (category.value === next) return
+    category.value = next
+    page.value = 0
+  }
+
+  function applySearch(): void {
+    const next = searchInput.value.trim()
+    if (searchText.value === next) {
+      void refresh()
+      return
+    }
+    searchText.value = next
+    page.value = 0
+  }
+
+  function onSearchInput(): void {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      applySearch()
+    }, 350)
+  }
+
+  function clearSearch(): void {
+    searchInput.value = ''
+    if (searchText.value) {
+      searchText.value = ''
+      page.value = 0
+    }
+  }
+
   return {
     list,
     pending,
     error,
     refresh,
     page,
+    category,
+    searchInput,
+    searchText,
     canPrev,
     canNext,
     prevPage,
-    nextPage
+    nextPage,
+    setCategory,
+    applySearch,
+    onSearchInput,
+    clearSearch
   }
 }

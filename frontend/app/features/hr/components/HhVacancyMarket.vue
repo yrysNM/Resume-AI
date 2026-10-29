@@ -1,6 +1,17 @@
 <script setup lang="ts">
-import type { HhVacancyOut } from '~/shared/schemas/hh'
+import { HH_CATEGORIES, type HhCategory, type HhVacancyOut } from '~/shared/schemas/hh'
 import { useHhVacancies } from '../composables/useHhVacancies'
+
+const props = withDefaults(
+  defineProps<{
+    defaultCategory?: HhCategory
+    cacheKey?: string
+  }>(),
+  {
+    defaultCategory: 'hr',
+    cacheKey: 'hh-vacancies'
+  }
+)
 
 const { t } = useI18n()
 const {
@@ -8,11 +19,27 @@ const {
   pending,
   error,
   refresh,
+  category,
+  searchInput,
   canPrev,
   canNext,
   prevPage,
-  nextPage
-} = useHhVacancies()
+  nextPage,
+  setCategory,
+  applySearch,
+  onSearchInput,
+  clearSearch
+} = useHhVacancies({
+  defaultCategory: props.defaultCategory,
+  cacheKey: props.cacheKey
+})
+
+const categoryItems = computed(() =>
+  HH_CATEGORIES.map(id => ({
+    id,
+    label: t(`hh_cat_${id}`)
+  }))
+)
 
 function salaryAmount(item: HhVacancyOut): string | null {
   if (item.salary_from == null && item.salary_to == null) return null
@@ -51,9 +78,56 @@ const cards = computed(() =>
     <p class="mb-2 text-slate-400">
       {{ t('hh_subtitle') }}
     </p>
-    <p class="mb-7 text-sm text-slate-500">
+    <p class="mb-5 text-sm text-slate-500">
       {{ t('hh_source') }}
     </p>
+
+    <form
+      class="mb-5 flex flex-col gap-3"
+      @submit.prevent="applySearch"
+    >
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <UInput
+          v-model="searchInput"
+          type="search"
+          class="w-full flex-1"
+          :placeholder="t('hh_search_placeholder')"
+          :aria-label="t('hh_search_placeholder')"
+          @update:model-value="onSearchInput"
+        />
+        <div class="flex shrink-0 gap-2">
+          <UButton
+            type="submit"
+            color="primary"
+            :label="t('hh_search')"
+          />
+          <UButton
+            type="button"
+            color="neutral"
+            variant="subtle"
+            :label="t('hh_clear')"
+            :disabled="!searchInput"
+            @click="clearSearch"
+          />
+        </div>
+      </div>
+
+      <div
+        class="flex flex-wrap gap-2"
+        role="group"
+        :aria-label="t('hh_categories')"
+      >
+        <UButton
+          v-for="item in categoryItems"
+          :key="item.id"
+          size="sm"
+          :color="category === item.id ? 'primary' : 'neutral'"
+          :variant="category === item.id ? 'solid' : 'subtle'"
+          :label="item.label"
+          @click="setCategory(item.id)"
+        />
+      </div>
+    </form>
 
     <p
       v-if="pending"

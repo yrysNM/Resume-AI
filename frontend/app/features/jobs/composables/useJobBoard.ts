@@ -7,6 +7,9 @@ export function useJobBoard() {
   const toast = useToast()
   const auth = useAuth()
   const applying = ref(false)
+  const searchInput = ref('')
+  const searchQuery = ref('')
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   const {
     data: jobs,
@@ -17,11 +20,15 @@ export function useJobBoard() {
     'open-jobs',
     async () => {
       if (!auth.isAuthenticated.value || auth.isHr.value) return []
-      return listJobs()
+      return listJobs(searchQuery.value)
     },
     {
       default: () => [],
-      watch: [() => auth.isAuthenticated.value, () => auth.isHr.value]
+      watch: [
+        searchQuery,
+        () => auth.isAuthenticated.value,
+        () => auth.isHr.value
+      ]
     }
   )
 
@@ -44,6 +51,27 @@ export function useJobBoard() {
   const appliedVacancyIds = computed(() => {
     return new Set((applications.value || []).map(item => item.vacancy_id))
   })
+
+  function applySearch(): void {
+    const next = searchInput.value.trim()
+    if (searchQuery.value === next) {
+      void refresh()
+      return
+    }
+    searchQuery.value = next
+  }
+
+  function onSearchInput(): void {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      applySearch()
+    }, 350)
+  }
+
+  function clearSearch(): void {
+    searchInput.value = ''
+    if (searchQuery.value) searchQuery.value = ''
+  }
 
   async function apply(jobId: number, resumeId: number): Promise<boolean> {
     applying.value = true
@@ -91,6 +119,10 @@ export function useJobBoard() {
     refreshApplications,
     appliedVacancyIds,
     applying,
-    apply
+    apply,
+    searchInput,
+    applySearch,
+    onSearchInput,
+    clearSearch
   }
 }

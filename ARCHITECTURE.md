@@ -74,7 +74,8 @@ Locales: KK / RU / EN in `frontend/i18n/locales/`. Default locale `kk`, strategy
 | GET | `/api/vacancies/{id}` | Bearer HR | owner-scoped vacancy; else 404 |
 | GET | `/api/vacancies/{id}/applications` | Bearer HR | applications by `match_score` desc |
 | POST | `/api/vacancies/{id}/rank` | Bearer HR | recompute scores; 503 if BERT down and fallback off |
-| GET | `/api/hh/vacancies` | Bearer HR | live hh.kz HR vacancies (`?page=`); seeker → 403; 503 if HH down |
+| GET | `/api/hh/vacancies` | Bearer | live hh.kz vacancies (`?page=&text=&category=`); categories `all|hr|it|sales|marketing|finance`; 503 if HH down |
+| GET | `/api/hh/categories` | Bearer | category id list |
 | GET | `/api/jobs` | Bearer seeker | open vacancies (title, company name, description) |
 | POST | `/api/jobs/{id}/apply` | Bearer seeker | `{ resume_id }`; 404 if resume not owned; 409 if already applied or vacancy closed |
 | GET | `/api/applications` | Bearer seeker | own applications + vacancy title + score |

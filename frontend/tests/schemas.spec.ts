@@ -18,7 +18,7 @@ import {
 } from '../app/shared/schemas/hr'
 import { jobOutSchema, seekerApplicationSchema } from '../app/shared/schemas/jobs'
 import { dashboardOutSchema } from '../app/shared/schemas/dashboard'
-import { hhVacancyListSchema } from '../app/shared/schemas/hh'
+import { HH_CATEGORIES, hhCategorySchema, hhVacancyListSchema } from '../app/shared/schemas/hh'
 import { formatMatchScore } from '../app/shared/utils/score'
 import { applicantName } from '../app/features/hr/lib/applicantName'
 
@@ -243,6 +243,12 @@ describe('hr jobs dashboard schemas', () => {
 })
 
 describe('hh schemas', () => {
+  it('accepts known HH categories', () => {
+    expect(HH_CATEGORIES).toContain('hr')
+    expect(HH_CATEGORIES).toContain('all')
+    expect(hhCategorySchema.parse('it')).toBe('it')
+  })
+
   it('parses HhVacancyList', () => {
     const parsed = hhVacancyListSchema.parse({
       found: 2,

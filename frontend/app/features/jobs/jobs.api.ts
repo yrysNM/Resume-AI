@@ -6,8 +6,10 @@ import {
   type SeekerApplication
 } from '~/shared/schemas/jobs'
 
-export async function listJobs(): Promise<JobOut[]> {
-  const data = await apiRequest<unknown>('/api/jobs')
+export async function listJobs(q = ''): Promise<JobOut[]> {
+  const data = await apiRequest<unknown>('/api/jobs', {
+    query: q.trim() ? { q: q.trim() } : undefined
+  })
   return jobOutSchema.array().parse(data)
 }
 

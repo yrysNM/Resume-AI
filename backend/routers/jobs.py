@@ -16,6 +16,7 @@ router = APIRouter(tags=["jobs"])
 
 @router.get("/api/jobs", response_model=list[JobOut])
 def list_jobs(
+    q: str = "",
     db: Session = Depends(get_db),
     _: User = Depends(require_seeker),
 ) -> list[JobOut]:
@@ -26,16 +27,24 @@ def list_jobs(
         .order_by(Vacancy.created_at.desc())
         .all()
     )
-    return [
-        JobOut(
-            id=v.id,
-            title=v.title,
-            description=v.description,
-            company_id=v.company_id,
-            company_name=v.company.name if v.company else "",
+    needle = (q or "").strip().lower()
+    out: list[JobOut] = []
+    for v in rows:
+        company_name = v.company.name if v.company else ""
+        if needle:
+            hay = f"{v.title} {v.description} {company_name}".lower()
+            if needle not in hay:
+                continue
+        out.append(
+            JobOut(
+                id=v.id,
+                title=v.title,
+                description=v.description,
+                company_id=v.company_id,
+                company_name=company_name,
+            )
         )
-        for v in rows
-    ]
+    return out
 
 
 @router.post("/api/jobs/{vacancy_id}/apply", response_model=SeekerApplicationOut, status_code=201)

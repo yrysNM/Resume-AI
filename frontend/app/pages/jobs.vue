@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { HhVacancyMarket } from '~/features/hr'
 import { JobBoard } from '~/features/jobs'
 import { useAuth } from '~/features/auth/composables/useAuth'
 
@@ -26,7 +27,11 @@ useSeoMeta({
 </script>
 
 <template>
-  <main>
+  <main class="flex flex-col gap-6">
+    <HhVacancyMarket
+      default-category="all"
+      cache-key="hh-jobs-vacancies"
+    />
     <JobBoard />
   </main>
 </template>

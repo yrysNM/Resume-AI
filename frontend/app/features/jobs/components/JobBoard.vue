@@ -14,7 +14,11 @@ const {
   applicationsPending,
   appliedVacancyIds,
   applying,
-  apply
+  apply,
+  searchInput,
+  applySearch,
+  onSearchInput,
+  clearSearch
 } = useJobBoard()
 const { items: resumes, pending: resumesPending } = useResumeLibrary()
 
@@ -57,9 +61,38 @@ function vacancyLabel(application: { vacancy_title: string }): string {
       <h1 class="mb-2 text-3xl font-bold text-slate-100">
         {{ t('jobs_title') }}
       </h1>
-      <p class="mb-7 text-slate-400">
+      <p class="mb-5 text-slate-400">
         {{ t('jobs_subtitle') }}
       </p>
+
+      <form
+        class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center"
+        @submit.prevent="applySearch"
+      >
+        <UInput
+          v-model="searchInput"
+          type="search"
+          class="w-full flex-1"
+          :placeholder="t('jobs_search_placeholder')"
+          :aria-label="t('jobs_search_placeholder')"
+          @update:model-value="onSearchInput"
+        />
+        <div class="flex shrink-0 gap-2">
+          <UButton
+            type="submit"
+            color="primary"
+            :label="t('jobs_search')"
+          />
+          <UButton
+            type="button"
+            color="neutral"
+            variant="subtle"
+            :label="t('jobs_clear')"
+            :disabled="!searchInput"
+            @click="clearSearch"
+          />
+        </div>
+      </form>
 
       <p
         v-if="pending"

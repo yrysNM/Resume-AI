@@ -28,13 +28,13 @@ frontend/
 │   │   ├── index.vue           # wizard; logged-in HR → /hr
 │   │   ├── jobs.vue
 │   │   ├── dashboard.vue
-│   │   └── hr/                 # companies, vacancies, ranking
+│   │   └── hr/                 # companies, vacancies, ranking, hh.kz market-watch
 │   ├── plugins/                # auth + locale bootstrap
 │   ├── features/
 │   │   ├── auth/               # store, api, LoginModal, AuthBar
 │   │   ├── resume/             # wizard form/state, generate, export, preview
 │   │   ├── library/            # saved list open/delete
-│   │   ├── hr/                 # companies, vacancies, ranked applicants
+│   │   ├── hr/                 # companies, vacancies, ranked applicants, hh.kz market-watch
 │   │   ├── jobs/               # open vacancies + apply
 │   │   ├── dashboard/          # role stats cards
 │   │   └── i18n/               # locale feature marker
@@ -94,6 +94,7 @@ Seekers apply from `/jobs` with a library resume. HR manages companies → vacan
 | GET | `/api/vacancies/:id` | hr vacancy (ranking page) |
 | GET | `/api/vacancies/:id/applications` | hr ranking |
 | POST | `/api/vacancies/:id/rank` | hr re-rank |
+| GET | `/api/hh/vacancies` | hr market-watch (`?page=`; 503 if HH down) |
 | GET | `/api/jobs` | jobs (seeker) |
 | POST | `/api/jobs/:id/apply` | jobs (`{ resume_id }`; 409 closed/duplicate) |
 | GET | `/api/applications` | seeker applications |

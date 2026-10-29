@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DashboardView } from '~/features/dashboard'
-import { HrHome } from '~/features/hr'
+import { HhVacancyMarket, HrHome } from '~/features/hr'
 
 const { t } = useI18n()
 
@@ -12,6 +12,7 @@ useSeoMeta({
 <template>
   <main class="flex flex-col gap-6">
     <HrHome />
+    <HhVacancyMarket />
     <DashboardView :heading="false" />
   </main>
 </template>

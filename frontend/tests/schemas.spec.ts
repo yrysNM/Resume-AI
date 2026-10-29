@@ -18,6 +18,7 @@ import {
 } from '../app/shared/schemas/hr'
 import { jobOutSchema, seekerApplicationSchema } from '../app/shared/schemas/jobs'
 import { dashboardOutSchema } from '../app/shared/schemas/dashboard'
+import { hhVacancyListSchema } from '../app/shared/schemas/hh'
 import { formatMatchScore } from '../app/shared/utils/score'
 import { applicantName } from '../app/features/hr/lib/applicantName'
 
@@ -238,5 +239,52 @@ describe('hr jobs dashboard schemas', () => {
       ranked_by: 'heuristic-keywords',
       created_at: '2026-01-01T00:00:00Z'
     }))).toBe('Test User')
+  })
+})
+
+describe('hh schemas', () => {
+  it('parses HhVacancyList', () => {
+    const parsed = hhVacancyListSchema.parse({
+      found: 2,
+      page: 0,
+      pages: 1,
+      per_page: 20,
+      items: [
+        {
+          id: '123',
+          title: 'HR Manager',
+          employer_name: 'Acme',
+          area_name: 'Almaty',
+          salary_from: 300000,
+          salary_to: 500000,
+          salary_currency: 'KZT',
+          published_at: '2026-01-01T00:00:00+03:00',
+          requirement: 'HR experience',
+          responsibility: 'Recruiting',
+          experience: '1–3 years',
+          schedule: 'Full day',
+          url: 'https://hh.kz/vacancy/123'
+        },
+        {
+          id: '456',
+          title: 'Recruiter',
+          employer_name: 'Beta',
+          area_name: null,
+          salary_from: null,
+          salary_to: null,
+          salary_currency: null,
+          published_at: '2026-01-02T00:00:00+03:00',
+          requirement: null,
+          responsibility: null,
+          experience: null,
+          schedule: null,
+          url: 'https://hh.kz/vacancy/456'
+        }
+      ]
+    })
+    expect(parsed.found).toBe(2)
+    expect(parsed.items[0]?.id).toBe('123')
+    expect(parsed.items[0]?.salary_from).toBe(300000)
+    expect(parsed.items[1]?.area_name).toBeNull()
   })
 })

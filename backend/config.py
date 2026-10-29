@@ -59,6 +59,12 @@ class Settings:
     # When false, generate/analyze return HTTP 503 with a clear error.
     ai_allow_fallback: bool = True
 
+    # HeadHunter public vacancy search (HR market watch). No OAuth token.
+    hh_api_base: str = "https://api.hh.ru"
+    hh_user_agent: str = "ResumeAI/1.3.0 (dev)"
+    hh_area: str = "40"
+    hh_per_page: int = 20
+
 
 def get_settings() -> Settings:
     return Settings(
@@ -78,6 +84,10 @@ def get_settings() -> Settings:
         ),
         bert_retry_load=_env_bool("BERT_RETRY_LOAD", Settings.bert_retry_load),
         ai_allow_fallback=_env_bool("AI_ALLOW_FALLBACK", Settings.ai_allow_fallback),
+        hh_api_base=os.getenv("HH_API_BASE", Settings.hh_api_base),
+        hh_user_agent=os.getenv("HH_USER_AGENT", Settings.hh_user_agent),
+        hh_area=os.getenv("HH_AREA", Settings.hh_area),
+        hh_per_page=int(os.getenv("HH_PER_PAGE", str(Settings.hh_per_page))),
     )
 
 

@@ -212,3 +212,27 @@ class SeekerDashboard(BaseModel):
 
 
 DashboardOut = Annotated[HrDashboard | SeekerDashboard, Field(discriminator="role")]
+
+
+class HhVacancyOut(BaseModel):
+    id: str
+    title: str
+    employer_name: str
+    area_name: str | None = None
+    salary_from: int | None = None
+    salary_to: int | None = None
+    salary_currency: str | None = None
+    published_at: str
+    requirement: str | None = None
+    responsibility: str | None = None
+    experience: str | None = None
+    schedule: str | None = None
+    url: str  # HH alternate_url
+
+
+class HhVacancyList(BaseModel):
+    found: int
+    page: int
+    pages: int
+    per_page: int
+    items: list[HhVacancyOut]
